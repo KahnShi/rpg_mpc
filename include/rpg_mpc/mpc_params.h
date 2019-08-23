@@ -47,8 +47,8 @@ class MpcParams {
     max_bodyrate_z_(0.0),
     min_thrust_(0.0),
     max_thrust_(0.0),
-    p_B_C_(Eigen::Matrix<T, 3, 1>::Zero()),
-    q_B_C_(Eigen::Quaternion<T>(1.0, 0.0, 0.0, 0.0)),
+    // p_B_C_(Eigen::Matrix<T, 3, 1>::Zero()),
+    // q_B_C_(Eigen::Quaternion<T>(1.0, 0.0, 0.0, 0.0)),
     Q_(Eigen::Matrix<T, kCostSize, kCostSize>::Zero()),
     R_(Eigen::Matrix<T, kInputSize, kInputSize>::Zero())
   {
@@ -106,8 +106,7 @@ class MpcParams {
     Q_ = (Eigen::Matrix<T, kCostSize, 1>() <<
       Q_pos_xy, Q_pos_xy, Q_pos_z,
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
-      Q_velocity, Q_velocity, Q_velocity,
-      Q_perception, Q_perception).finished().asDiagonal();
+      Q_velocity, Q_velocity, Q_velocity).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
       R_thrust, R_pitchroll, R_pitchroll, R_yaw).finished().asDiagonal();
 
@@ -134,23 +133,23 @@ class MpcParams {
     }
 
     // Optional parameters
-    std::vector<T> p_B_C(3), q_B_C(4);
-    if(!pnh.getParam("p_B_C", p_B_C))
-    {
-      ROS_WARN("MPC: Camera extrinsic translation is not set.");
-    }
-    else
-    {
-      p_B_C_ = Eigen::Matrix<T, 3, 1>(p_B_C[0], p_B_C[1], p_B_C[2]);
-    }
-    if(!pnh.getParam("q_B_C", q_B_C))
-    {
-      ROS_WARN("MPC: Camera extrinsic rotation is not set.");
-    }
-    else
-    {
-      q_B_C_ = Eigen::Quaternion<T>(q_B_C[0], q_B_C[1], q_B_C[2], q_B_C[3]);
-    }
+    // std::vector<T> p_B_C(3), q_B_C(4);
+    // if(!pnh.getParam("p_B_C", p_B_C))
+    // {
+    //   ROS_WARN("MPC: Camera extrinsic translation is not set.");
+    // }
+    // else
+    // {
+    //   p_B_C_ = Eigen::Matrix<T, 3, 1>(p_B_C[0], p_B_C[1], p_B_C[2]);
+    // }
+    // if(!pnh.getParam("q_B_C", q_B_C))
+    // {
+    //   ROS_WARN("MPC: Camera extrinsic rotation is not set.");
+    // }
+    // else
+    // {
+    //   q_B_C_ = Eigen::Quaternion<T>(q_B_C[0], q_B_C[1], q_B_C[2], q_B_C[3]);
+    // }
 
     quadrotor_common::getParam("print_info", print_info_, false, pnh);
     if(print_info_) ROS_INFO("MPC: Informative printing enabled.");
@@ -177,8 +176,8 @@ class MpcParams {
   T min_thrust_;
   T max_thrust_;
 
-  Eigen::Matrix<T, 3, 1> p_B_C_;
-  Eigen::Quaternion<T> q_B_C_;
+  // Eigen::Matrix<T, 3, 1> p_B_C_;
+  // Eigen::Quaternion<T> q_B_C_;
 
   Eigen::Matrix<T, kCostSize, kCostSize> Q_;
   Eigen::Matrix<T, kInputSize, kInputSize> R_;

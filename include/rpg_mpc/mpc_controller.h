@@ -89,8 +89,8 @@ class MpcController {
  private:
   // Internal helper functions.
 
-  void pointOfInterestCallback(
-    const geometry_msgs::PointStamped::ConstPtr& msg);
+  // void pointOfInterestCallback(
+  //   const geometry_msgs::PointStamped::ConstPtr& msg);
 
   bool setStateEstimate(
     const quadrotor_common::QuadStateEstimate& state_estimate);
@@ -116,7 +116,7 @@ class MpcController {
   ros::NodeHandle pnh_;
 
   // Subscribers and publisher.
-  ros::Subscriber sub_point_of_interest_;
+  // ros::Subscriber sub_point_of_interest_;
   ros::Publisher pub_predicted_trajectory_;
 
   // Parameters

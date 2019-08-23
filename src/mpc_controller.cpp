@@ -47,8 +47,8 @@ MpcController<T>::MpcController(
   pub_predicted_trajectory_ =
     nh_.advertise<nav_msgs::Path>("mpc/trajectory_predicted", 1);
 
-  sub_point_of_interest_ = nh_.subscribe("mpc/point_of_interest", 1,
-    &MpcController<T>::pointOfInterestCallback, this);
+  // sub_point_of_interest_ = nh_.subscribe("mpc/point_of_interest", 1,
+  //   &MpcController<T>::pointOfInterestCallback, this);
 
   if(!params_.loadParameters(pnh_))
   {
@@ -61,15 +61,15 @@ MpcController<T>::MpcController(
   preparation_thread_ = std::thread(&MpcWrapper<T>::prepare, mpc_wrapper_);
 }
 
-template <typename T>
-void MpcController<T>::pointOfInterestCallback(
-  const geometry_msgs::PointStamped::ConstPtr& msg)
-{
-  point_of_interest_(0) = msg->point.x;
-  point_of_interest_(1) = msg->point.y;
-  point_of_interest_(2) = msg->point.z;
-  mpc_wrapper_.setPointOfInterest(point_of_interest_);
-}
+// template <typename T>
+// void MpcController<T>::pointOfInterestCallback(
+//   const geometry_msgs::PointStamped::ConstPtr& msg)
+// {
+//   point_of_interest_(0) = msg->point.x;
+//   point_of_interest_(1) = msg->point.y;
+//   point_of_interest_(2) = msg->point.z;
+//   mpc_wrapper_.setPointOfInterest(point_of_interest_);
+// }
 
 template <typename T>
 quadrotor_common::ControlCommand MpcController<T>::off()
@@ -304,7 +304,7 @@ bool MpcController<T>::setNewParams(MpcParams<T>& params)
   mpc_wrapper_.setLimits(
     params.min_thrust_, params.max_thrust_,
     params.max_bodyrate_xy_, params.max_bodyrate_z_);
-  mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
+  // mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
   params.changed_ = false;
   return true;
 }

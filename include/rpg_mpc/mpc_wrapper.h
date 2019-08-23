@@ -63,11 +63,11 @@ class MpcWrapper
 
   bool setLimits(T min_thrust, T max_thrust,
     T max_rollpitchrate, T max_yawrate);
-  bool setCameraParameters(
-    const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
-    Eigen::Quaternion<T>& q_B_C);
-  bool setPointOfInterest(
-    const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& position);
+  // bool setCameraParameters(
+  //   const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
+  //   Eigen::Quaternion<T>& q_B_C);
+  // bool setPointOfInterest(
+  //   const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& position);
 
   bool setReferencePose(
     const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state);
@@ -106,8 +106,8 @@ class MpcWrapper
   Eigen::Map<Eigen::Matrix<float, kInputSize, kSamples, Eigen::ColMajor>>
     acado_inputs_{acadoVariables.u};
 
-  Eigen::Map<Eigen::Matrix<float, kOdSize, kSamples+1, Eigen::ColMajor>>
-    acado_online_data_{acadoVariables.od};
+  // Eigen::Map<Eigen::Matrix<float, kOdSize, kSamples+1, Eigen::ColMajor>>
+  //   acado_online_data_{acadoVariables.od};
 
   Eigen::Map<Eigen::Matrix<float, kRefSize, kRefSize * kSamples>>
     acado_W_{acadoVariables.W};
@@ -125,7 +125,6 @@ class MpcWrapper
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
     100 * Eigen::Matrix<T, 4, 1>::Ones(),
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
-    Eigen::Matrix<T, 2, 1>::Zero(),
     1, 10, 10, 1).finished().asDiagonal();
 
   Eigen::Matrix<T, kEndRefSize, kEndRefSize> WN_ =
