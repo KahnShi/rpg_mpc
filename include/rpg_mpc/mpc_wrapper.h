@@ -61,8 +61,7 @@ class MpcWrapper
     const Eigen::Ref<const Eigen::Matrix<T, kInputSize, kInputSize>> R,
     const T state_cost_scaling = 0.0, const T input_cost_scaling = 0.0);
 
-  bool setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate);
+  bool setLimits(T min_thrust, T max_thrust);
   // bool setCameraParameters(
   //   const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
   //   Eigen::Quaternion<T>& q_B_C);
@@ -125,7 +124,8 @@ class MpcWrapper
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
     100 * Eigen::Matrix<T, 4, 1>::Ones(),
     10 * Eigen::Matrix<T, 3, 1>::Ones(),
-    1, 10, 10, 1).finished().asDiagonal();
+    1 * Eigen::Matrix<T, 3, 1>::Ones(),
+    1, 1, 1, 1).finished().asDiagonal();
 
   Eigen::Matrix<T, kEndRefSize, kEndRefSize> WN_ =
     W_.block(0, 0, kEndRefSize, kEndRefSize);
@@ -133,7 +133,7 @@ class MpcWrapper
   bool acado_is_prepared_{false};
   const T dt_{0.1};
   const Eigen::Matrix<real_t, kInputSize, 1> kHoverInput_ =
-    (Eigen::Matrix<real_t, kInputSize, 1>() << 9.81, 0.0, 0.0, 0.0).finished();
+    (Eigen::Matrix<real_t, kInputSize, 1>() << 9.81 / 4.0, 9.81 / 4.0, 9.81 / 4.0, 9.81 / 4.0).finished();
 };
 
 

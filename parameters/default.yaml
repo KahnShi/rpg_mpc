@@ -25,10 +25,11 @@ Q_pos_xy:     200   # Cost for horizontal positon error
 Q_pos_z:      500   # Cost for vertical position error
 Q_attitude:   50    # Cost for attitude error
 Q_velocity:   10    # Cost for velocity error
+Q_angvelocity:   0.001    # Cost for angular velocity error
 Q_perception: 0     # Cost for reprojection error to camera optical axis (PAMPC)
 
 # Cost on Inputs
-R_thrust:     1     # Cost on thrust input
+R_thrust:     4     # Cost on thrust input
 R_pitchroll:  1     # Cost on pitch and roll rate
 R_yaw:        1     # Cost on yaw ratte
 

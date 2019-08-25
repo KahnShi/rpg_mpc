@@ -53,14 +53,17 @@ enum STATE {
   kOriZ = 6,
   kVelX = 7,
   kVelY = 8,
-  kVelZ = 9
+  kVelZ = 9,
+  kRateX = 10,
+  kRateY = 11,
+  kRateZ = 12
 };
 
 enum INPUT{
-  kThrust = 0,
-  kRateX = 1,
-  kRateY = 2,
-  kRateZ = 3
+  kThrust1 = 0,
+  kThrust2 = 1,
+  kThrust3 = 2,
+  kThrust4 = 3
 };
 
 template <typename T>
@@ -69,7 +72,7 @@ class MpcController {
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  static_assert(kStateSize == 10,
+  static_assert(kStateSize == 13,
     "MpcController: Wrong model size. Number of states does not match.");
   static_assert(kInputSize == 4,
     "MpcController: Wrong model size. Number of inputs does not match.");

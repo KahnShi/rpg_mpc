@@ -37,7 +37,7 @@ MpcController<T>::MpcController(
   timing_feedback_(T(1e-3)),
   timing_preparation_(T(1e-3)),
   est_state_((Eigen::Matrix<T, kStateSize, 1>() <<
-    0, 0, 0, 1, 0, 0, 0, 0, 0, 0).finished()),
+    0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0).finished()),
   reference_states_(Eigen::Matrix<T, kStateSize, kSamples+1>::Zero()),
   reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples+1>::Zero()),
   predicted_states_(Eigen::Matrix<T, kStateSize, kSamples+1>::Zero()),
@@ -144,6 +144,9 @@ bool MpcController<T>::setStateEstimate(
   est_state_(kVelX) = state_estimate.velocity.x();
   est_state_(kVelY) = state_estimate.velocity.y();
   est_state_(kVelZ) = state_estimate.velocity.z();
+  est_state_(kRateX) = state_estimate.bodyrates.x();
+  est_state_(kRateY) = state_estimate.bodyrates.y();
+  est_state_(kRateZ) = state_estimate.bodyrates.z();
   const bool quaternion_norm_ok = abs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
   return quaternion_norm_ok;
 }
@@ -174,15 +177,18 @@ bool MpcController<T>::setReference(
       q_orientation.x(),
       q_orientation.y(),
       q_orientation.z(),
-      reference_trajectory.points.front().velocity.template cast<T>()
+      reference_trajectory.points.front().velocity.template cast<T>(),
+      reference_trajectory.points.front().bodyrates.template cast<T>()
       ).finished().replicate(1, kSamples+1);
 
     acceleration <<
       reference_trajectory.points.front().acceleration.template cast<T>()
       - gravity;
     reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-      acceleration.norm(),
-      reference_trajectory.points.front().bodyrates.template cast<T>()
+      acceleration.norm() / 4.0,
+      acceleration.norm() / 4.0,
+      acceleration.norm() / 4.0,
+      acceleration.norm() / 4.0
       ).finished().replicate(1, kSamples+1);
   }
   else
@@ -204,14 +210,17 @@ bool MpcController<T>::setReference(
                                   q_orientation.x(),
                                   q_orientation.y(),
                                   q_orientation.z(),
-                                  iterator->velocity.template cast<T>();
+                                  iterator->velocity.template cast<T>(),
+                                  iterator->bodyrates.template cast<T>();
       if(reference_states_.col(i).segment(kOriW,4).dot(
         est_state_.segment(kOriW,4))<0.0)
           reference_states_.block(kOriW,i,4,1) =
             -reference_states_.block(kOriW,i,4,1);
       acceleration << iterator->acceleration.template cast<T>() - gravity;
-      reference_inputs_.col(i) << acceleration.norm(),
-                                  iterator->bodyrates.template cast<T>();
+      reference_inputs_.col(i) << acceleration.norm() / 4.0,
+        acceleration.norm() / 4.0,
+        acceleration.norm() / 4.0,
+        acceleration.norm() / 4.0;
       quaternion_norm_ok &= abs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
     }
   }
@@ -227,29 +236,45 @@ quadrotor_common::ControlCommand MpcController<T>::updateControlCommand(
   Eigen::Matrix<T, kInputSize, 1> input_bounded = input.template cast<T>();
   
   // Bound inputs for sanity.
-  input_bounded(INPUT::kThrust) = std::max(params_.min_thrust_,
-    std::min(params_.max_thrust_, input_bounded(INPUT::kThrust)));
-  input_bounded(INPUT::kRateX) = std::max(-params_.max_bodyrate_xy_,
-    std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateX)));
-  input_bounded(INPUT::kRateY) = std::max(-params_.max_bodyrate_xy_,
-    std::min(params_.max_bodyrate_xy_, input_bounded(INPUT::kRateY)));
-  input_bounded(INPUT::kRateZ) = std::max(-params_.max_bodyrate_z_,
-    std::min(params_.max_bodyrate_z_, input_bounded(INPUT::kRateZ)));
+  input_bounded(INPUT::kThrust1) = std::max(params_.min_thrust_,
+    std::min(params_.max_thrust_, input_bounded(INPUT::kThrust1)));
+  input_bounded(INPUT::kThrust2) = std::max(params_.min_thrust_,
+    std::min(params_.max_thrust_, input_bounded(INPUT::kThrust2)));
+  input_bounded(INPUT::kThrust3) = std::max(params_.min_thrust_,
+    std::min(params_.max_thrust_, input_bounded(INPUT::kThrust3)));
+  input_bounded(INPUT::kThrust4) = std::max(params_.min_thrust_,
+    std::min(params_.max_thrust_, input_bounded(INPUT::kThrust4)));
 
   quadrotor_common::ControlCommand command;
 
   command.timestamp = time;
   command.armed = true;
-  command.control_mode = quadrotor_common::ControlMode::BODY_RATES;
+  // command.control_mode = quadrotor_common::ControlMode::BODY_RATES;
   command.expected_execution_time = time;
-  command.collective_thrust = input_bounded(INPUT::kThrust);
-  command.bodyrates.x() = input_bounded(INPUT::kRateX);
-  command.bodyrates.y() = input_bounded(INPUT::kRateY);
-  command.bodyrates.z() = input_bounded(INPUT::kRateZ);
-  command.orientation.w() = state(STATE::kOriW);
-  command.orientation.x() = state(STATE::kOriX);
-  command.orientation.y() = state(STATE::kOriY);
-  command.orientation.z() = state(STATE::kOriZ);
+  // command.collective_thrust = input_bounded(INPUT::kThrust1) + input_bounded(INPUT::kThrust2) + input_bounded(INPUT::kThrust3) + input_bounded(INPUT::kThrust4);
+  // command.bodyrates.x() = state(STATE::kRateX);
+  // command.bodyrates.y() = state(STATE::kRateY);
+  // command.bodyrates.z() = state(STATE::kRateZ);
+  // command.orientation.w() = state(STATE::kOriW);
+  // command.orientation.x() = state(STATE::kOriX);
+  // command.orientation.y() = state(STATE::kOriY);
+  // command.orientation.z() = state(STATE::kOriZ);
+  
+  command.control_mode = quadrotor_common::ControlMode::ROTOR_THRUSTS;
+  command.rotor_thrusts.resize(4);
+  for (int i = 0; i < 4; ++i)
+    command.rotor_thrusts[i] = input_bounded(i) * 0.68;
+  
+  // test
+  std::cout << "thrust: ";
+  for (int i = kThrust1; i <= kThrust4; ++i)
+    std::cout << input_bounded(i) << ", ";
+  std::cout << "\n";
+  std::cout << "ang vel: ";
+  std::cout << command.bodyrates.x() << ", ";
+  std::cout << command.bodyrates.y() << ", ";
+  std::cout << command.bodyrates.z() << ", ";
+  std::cout << "\n\n";
   return command;
 }
 
@@ -302,8 +327,7 @@ bool MpcController<T>::setNewParams(MpcParams<T>& params)
 {
   mpc_wrapper_.setCosts(params.Q_, params.R_);
   mpc_wrapper_.setLimits(
-    params.min_thrust_, params.max_thrust_,
-    params.max_bodyrate_xy_, params.max_bodyrate_z_);
+    params.min_thrust_, params.max_thrust_);
   // mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
   params.changed_ = false;
   return true;

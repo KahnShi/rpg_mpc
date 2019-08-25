@@ -42,7 +42,8 @@ MpcWrapper<T>::MpcWrapper()
   const Eigen::Matrix<T, kStateSize, 1> hover_state =
     (Eigen::Matrix<T, kStateSize, 1>() << 0.0, 0.0, 0.0,
                                           1.0, 0.0, 0.0, 0.0,
-                                          0.0, 0.0, 0.0).finished();
+     0.0, 0.0, 0.0,
+     0.0, 0.0, 0.0).finished();
 
   // Initialize states x and xN and input u.
   acado_initial_state_ = hover_state.template cast<float>();
@@ -136,8 +137,7 @@ bool MpcWrapper<T>::setCosts(
 
 // Set the input limits.
 template <typename T>
-bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
-    T max_rollpitchrate, T max_yawrate)
+bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust)
 {
   if(min_thrust <= 0.0 || min_thrust > max_thrust)
   {
@@ -151,25 +151,25 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust,
     return false;
   }
 
-  if(max_rollpitchrate <= 0.0)
-  {
-    ROS_ERROR("MPC: Maximal xy-rate is not set properly, not changed.");
-    return false;
-  }
+  // if(max_rollpitchrate <= 0.0)
+  // {
+  //   ROS_ERROR("MPC: Maximal xy-rate is not set properly, not changed.");
+  //   return false;
+  // }
 
-  if(max_yawrate <= 0.0)
-  {
-    ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
-    return false;
-  }
+  // if(max_yawrate <= 0.0)
+  // {
+  //   ROS_ERROR("MPC: Maximal yaw-rate is not set properly, not changed.");
+  //   return false;
+  // }
 
   // Set input boundaries.
   Eigen::Matrix<T, 4, 1> lower_bounds = Eigen::Matrix<T, 4, 1>::Zero();
   Eigen::Matrix<T, 4, 1> upper_bounds = Eigen::Matrix<T, 4, 1>::Zero();
   lower_bounds << min_thrust,
-    -max_rollpitchrate, -max_rollpitchrate, -max_yawrate;
+    min_thrust, min_thrust, min_thrust;
   upper_bounds << max_thrust,
-    max_rollpitchrate, max_rollpitchrate, max_yawrate;
+    max_thrust, max_thrust, max_thrust;
 
   acado_lower_bounds_ =
     lower_bounds.replicate(1, kSamples).template cast<float>();

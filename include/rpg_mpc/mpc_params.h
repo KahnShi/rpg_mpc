@@ -43,8 +43,8 @@ class MpcParams {
     print_info_(false),
     state_cost_exponential_(0.0),
     input_cost_exponential_(0.0),
-    max_bodyrate_xy_(0.0),
-    max_bodyrate_z_(0.0),
+    // max_bodyrate_xy_(0.0),
+    // max_bodyrate_z_(0.0),
     min_thrust_(0.0),
     max_thrust_(0.0),
     // p_B_C_(Eigen::Matrix<T, 3, 1>::Zero()),
@@ -69,11 +69,12 @@ class MpcParams {
       return false
 
     // Read state costs.
-    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_perception;
+    T Q_pos_xy, Q_pos_z, Q_attitude, Q_velocity, Q_angvelocity, Q_perception;
     GET_PARAM(Q_pos_xy);
     GET_PARAM(Q_pos_z);
     GET_PARAM(Q_attitude);
     GET_PARAM(Q_velocity);
+    GET_PARAM(Q_angvelocity);
     quadrotor_common::getParam("Q_perception", Q_perception, (T)0.0, pnh);
 
     // Check whether all state costs are positive.
@@ -81,6 +82,7 @@ class MpcParams {
        Q_pos_z      <= 0.0 ||
        Q_attitude   <= 0.0 ||
        Q_velocity   <= 0.0 ||
+       Q_angvelocity   <= 0.0 ||
        Q_perception < 0.0)      // Perception cost can be zero to deactivate.
     {
       ROS_ERROR("MPC: State cost Q has negative enries!");
@@ -90,13 +92,11 @@ class MpcParams {
     // Read input costs.
     T R_thrust, R_pitchroll, R_yaw;
     GET_PARAM(R_thrust);
-    GET_PARAM(R_pitchroll);
-    GET_PARAM(R_yaw);
+    // GET_PARAM(R_pitchroll);
+    // GET_PARAM(R_yaw);
 
     // Check whether all input costs are positive.
-    if(R_thrust    <= 0.0 ||
-       R_pitchroll <= 0.0 ||
-       R_yaw       <= 0.0)
+    if(R_thrust    <= 0.0)
     {
       ROS_ERROR("MPC: Input cost R has negative enries!");
       return false;
@@ -106,9 +106,10 @@ class MpcParams {
     Q_ = (Eigen::Matrix<T, kCostSize, 1>() <<
       Q_pos_xy, Q_pos_xy, Q_pos_z,
       Q_attitude, Q_attitude, Q_attitude, Q_attitude,
-      Q_velocity, Q_velocity, Q_velocity).finished().asDiagonal();
+      Q_velocity, Q_velocity, Q_velocity,
+      Q_angvelocity, Q_angvelocity, Q_angvelocity).finished().asDiagonal();
     R_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-      R_thrust, R_pitchroll, R_pitchroll, R_yaw).finished().asDiagonal();
+      R_thrust, R_thrust, R_thrust, R_thrust).finished().asDiagonal();
 
     // Read cost scaling values
     quadrotor_common::getParam("state_cost_exponential",
@@ -117,15 +118,16 @@ class MpcParams {
       input_cost_exponential_, (T)0.0, pnh);
 
     // Read input limits.
-    GET_PARAM_(max_bodyrate_xy);
-    GET_PARAM_(max_bodyrate_z);
+    // GET_PARAM_(max_bodyrate_xy);
+    // GET_PARAM_(max_bodyrate_z);
     GET_PARAM_(min_thrust);
     GET_PARAM_(max_thrust);
 
+    min_thrust_ /= 4.0;
+    max_thrust_ /= 4.0;
+
     // Check whether all input limits are positive.
-    if(max_bodyrate_xy_ <= 0.0 ||
-       max_bodyrate_z_  <= 0.0 ||
-       min_thrust_      <= 0.0 ||
+    if(min_thrust_      <= 0.0 ||
        max_thrust_      <= 0.0)
     {
       ROS_ERROR("MPC: All limits must be positive non-zero values!");
@@ -171,8 +173,8 @@ class MpcParams {
   T state_cost_exponential_;
   T input_cost_exponential_;
 
-  T max_bodyrate_xy_;
-  T max_bodyrate_z_;
+  // T max_bodyrate_xy_;
+  // T max_bodyrate_z_;
   T min_thrust_;
   T max_thrust_;
 
