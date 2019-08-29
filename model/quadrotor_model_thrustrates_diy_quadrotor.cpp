@@ -57,16 +57,9 @@ int main( ){
   // Control               T, w_x, w_y, w_z;
   DifferentialEquation  f;
   Function              h, hN;
-  OnlineData            I_xx, I_xy, I_xz, I_yy, I_yz, I_zz;
-  OnlineData            mass;
-  OnlineData            p_rotor1_x, p_rotor1_y, p_rotor1_z;
-  OnlineData            n_rotor1_x, n_rotor1_y, n_rotor1_z;
-  OnlineData            p_rotor2_x, p_rotor2_y, p_rotor2_z;
-  OnlineData            n_rotor2_x, n_rotor2_y, n_rotor2_z;
-  OnlineData            p_rotor3_x, p_rotor3_y, p_rotor3_z;
-  OnlineData            n_rotor3_x, n_rotor3_y, n_rotor3_z;
-  OnlineData            p_rotor4_x, p_rotor4_y, p_rotor4_z;
-  OnlineData            n_rotor4_x, n_rotor4_y, n_rotor4_z;
+  // OnlineData            p_F_x, p_F_y, p_F_z;
+  // OnlineData            t_B_C_x, t_B_C_y, t_B_C_z;
+  // OnlineData            q_B_C_w, q_B_C_x, q_B_C_y, q_B_C_z;
 
   // Parameters with exemplary values. These are set/overwritten at runtime.
   const double t_start = 0.0;     // Initial time [s]
@@ -76,10 +69,30 @@ int main( ){
   const double g_z = 9.8066;      // Gravity is everywhere [m/s^2]
   const double w_max_yaw = 1;     // Maximal yaw rate [rad/s]
   const double w_max_xy = 3;      // Maximal pitch and roll rate [rad/s]
-  const double T_min = 2.0;         // Minimal thrust [N]
-  const double T_max = 16.5;        // Maximal thrust [N]
-  const double rotor_direction[4] = {-1, 1, -1, 1};
-  const double moment_constant = -0.0172;
+  const double T_min = 2 / 4.0;         // Minimal thrust [N]
+  const double T_max = 20 / 4.0;        // Maximal thrust [N]
+
+  // Bias to prevent division by zero.
+  const double epsilon = 0.1;     // Camera projection recover bias [m]
+
+  // Intertia
+  DMatrix I_uav(3, 3);
+  DMatrix I_uav_inv(3, 3);
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j){
+      I_uav(i, j) = 0.0;
+      I_uav_inv(i, j) = 0.0;
+    }
+  I_uav(0, 0) = 0.007;
+  I_uav(1, 1) = 0.007;
+  I_uav(2, 2) = 0.012;
+  I_uav_inv(0, 0) = 1.0 / 0.007;
+  I_uav_inv(1, 1) = 1.0 / 0.007;
+  I_uav_inv(2, 2) = 1.0 / 0.012;
+  const double moment_constant = 0.016;
+  const double arm_length = 0.17;
+  double uav_mass = 0.68;
+
 
   // System Dynamics
   f << dot(p_x) ==  v_x;
@@ -89,55 +102,31 @@ int main( ){
   f << dot(q_x) ==  0.5 * ( w_x * q_w + w_z * q_y - w_y * q_z);
   f << dot(q_y) ==  0.5 * ( w_y * q_w - w_z * q_x + w_x * q_z);
   f << dot(q_z) ==  0.5 * ( w_z * q_w + w_y * q_x - w_x * q_y);
-  f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * (T_1 + T_2 + T_3 + T_4) / mass;
-  f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * (T_1 + T_2 + T_3 + T_4) / mass;
-  f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * (T_1 + T_2 + T_3 + T_4) / mass - g_z;
-  // sum pi x (T_i * ni) + m_rf * T_i * ni
+  f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * (T_1 + T_2 + T_3 + T_4);
+  f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * (T_1 + T_2 + T_3 + T_4);
+  f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * (T_1 + T_2 + T_3 + T_4) - g_z;
   IntermediateState torque[3];
-  torque[0] = moment_constant * rotor_direction[0] * n_rotor1_x * T_1
-    + moment_constant * rotor_direction[1] * n_rotor2_x * T_2
-    + moment_constant * rotor_direction[2] * n_rotor3_x * T_3
-    + moment_constant * rotor_direction[3] * n_rotor4_x * T_4
-    + (p_rotor1_y * n_rotor1_z - p_rotor1_z * n_rotor1_y) * T_1
-    + (p_rotor2_y * n_rotor2_z - p_rotor2_z * n_rotor2_y) * T_2
-    + (p_rotor3_y * n_rotor3_z - p_rotor3_z * n_rotor3_y) * T_3
-    + (p_rotor4_y * n_rotor4_z - p_rotor4_z * n_rotor4_y) * T_4
-    ;
-  torque[1] = moment_constant * rotor_direction[0] * n_rotor1_y * T_1
-    + moment_constant * rotor_direction[1] * n_rotor2_y * T_2
-    + moment_constant * rotor_direction[2] * n_rotor3_y * T_3
-    + moment_constant * rotor_direction[3] * n_rotor4_y * T_4
-    + (p_rotor1_z * n_rotor1_x - p_rotor1_x * n_rotor1_z) * T_1
-    + (p_rotor2_z * n_rotor2_x - p_rotor2_x * n_rotor2_z) * T_2
-    + (p_rotor3_z * n_rotor3_x - p_rotor3_x * n_rotor3_z) * T_3
-    + (p_rotor4_z * n_rotor4_x - p_rotor4_x * n_rotor4_z) * T_4
-    ;
-  torque[2] = moment_constant * rotor_direction[0] * n_rotor1_z * T_1
-    + moment_constant * rotor_direction[1] * n_rotor2_z * T_2
-    + moment_constant * rotor_direction[2] * n_rotor3_z * T_3
-    + moment_constant * rotor_direction[3] * n_rotor4_z * T_4
-    + (p_rotor1_x * n_rotor1_y - p_rotor1_y * n_rotor1_x) * T_1
-    + (p_rotor2_x * n_rotor2_y - p_rotor2_y * n_rotor2_x) * T_2
-    + (p_rotor3_x * n_rotor3_y - p_rotor3_y * n_rotor3_x) * T_3
-    + (p_rotor4_x * n_rotor4_y - p_rotor4_y * n_rotor4_x) * T_4
-    ;
+  torque[0] = uav_mass * (arm_length * T_2 - arm_length * T_4);
+  torque[1] = uav_mass * (-arm_length * T_1 + arm_length * T_3);
+  torque[2] = uav_mass * (moment_constant * T_1 - moment_constant * T_2
+                          + moment_constant * T_3 - moment_constant * T_4);
   IntermediateState Iw[3];
-  Iw[0] = I_xx * w_x + I_xy * w_y + I_xz * w_z;
-  Iw[1] = I_xy * w_x + I_yy * w_y + I_yz * w_z;
-  Iw[2] = I_xz * w_x + I_yz * w_y + I_zz * w_z;
+  Iw[0] = I_uav(0, 0) * w_x + I_uav(0, 1) * w_y + I_uav(0, 2) * w_z;
+  Iw[1] = I_uav(1, 0) * w_x + I_uav(1, 1) * w_y + I_uav(1, 2) * w_z;
+  Iw[2] = I_uav(2, 0) * w_x + I_uav(2, 1) * w_y + I_uav(2, 2) * w_z;
   IntermediateState wxIw[3];
   wxIw[0] = w_y * Iw[2] - w_z * Iw[1];
   wxIw[1] = w_z * Iw[0] - w_x * Iw[2];
   wxIw[2] = w_x * Iw[1] - w_y * Iw[0];
-  f << dot(w_x) == I_xx * (torque[0] - wxIw[0])
-    + I_xy * (torque[1] - wxIw[1])
-    + I_xz * (torque[2] - wxIw[2]);
-  f << dot(w_y) == I_xy * (torque[0] - wxIw[0])
-    + I_yy * (torque[1] - wxIw[1])
-    + I_yz * (torque[2] - wxIw[2]);
-  f << dot(w_z) == I_xz * (torque[0] - wxIw[0])
-    + I_yz * (torque[1] - wxIw[1])
-    + I_zz * (torque[2] - wxIw[2]);
+  f << dot(w_x) == I_uav_inv(0, 0) * (torque[0] - wxIw[0])
+    + I_uav_inv(0, 1) * (torque[1] - wxIw[1])
+    + I_uav_inv(0, 2) * (torque[2] - wxIw[2]);
+  f << dot(w_y) == I_uav_inv(1, 0) * (torque[0] - wxIw[0])
+    + I_uav_inv(1, 1) * (torque[1] - wxIw[1])
+    + I_uav_inv(1, 2) * (torque[2] - wxIw[2]);
+  f << dot(w_z) == I_uav_inv(2, 0) * (torque[0] - wxIw[0])
+    + I_uav_inv(2, 1) * (torque[1] - wxIw[1])
+    + I_uav_inv(2, 2) * (torque[2] - wxIw[2]);
 
   // Cost: Sum(i=0, ..., N-1){h_i' * Q * h_i} + h_N' * Q_N * h_N
   // Running cost vector consists of all states and inputs.
@@ -230,7 +219,7 @@ int main( ){
   ocp.subjectTo( T_min <= T_3 <= T_max);
   ocp.subjectTo( T_min <= T_4 <= T_max);
 
-  ocp.setNOD(31);
+  // ocp.setNOD(10);
 
 
   if(!CODE_GEN)
