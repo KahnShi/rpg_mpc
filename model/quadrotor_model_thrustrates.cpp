@@ -129,15 +129,26 @@ int main( ){
   wxIw[0] = w_y * Iw[2] - w_z * Iw[1];
   wxIw[1] = w_z * Iw[0] - w_x * Iw[2];
   wxIw[2] = w_x * Iw[1] - w_y * Iw[0];
-  f << dot(w_x) == I_xx * (torque[0] - wxIw[0])
-    + I_xy * (torque[1] - wxIw[1])
-    + I_xz * (torque[2] - wxIw[2]);
-  f << dot(w_y) == I_xy * (torque[0] - wxIw[0])
-    + I_yy * (torque[1] - wxIw[1])
-    + I_yz * (torque[2] - wxIw[2]);
-  f << dot(w_z) == I_xz * (torque[0] - wxIw[0])
-    + I_yz * (torque[1] - wxIw[1])
-    + I_zz * (torque[2] - wxIw[2]);
+  IntermediateState Iw_m = DMatrix (3, 3);
+  Iw_m(0, 0) = I_xx;
+  Iw_m(0, 1) = I_xy;
+  Iw_m(0, 2) = I_xz;
+  Iw_m(1, 0) = I_xy;
+  Iw_m(1, 1) = I_yy;
+  Iw_m(1, 2) = I_yz;
+  Iw_m(2, 0) = I_xz;
+  Iw_m(2, 1) = I_yz;
+  Iw_m(2, 2) = I_zz;
+  IntermediateState Iw_inv_m = Iw_m.getInverse();
+  f << dot(w_x) == Iw_inv_m(0, 0) * (torque[0] - wxIw[0])
+    + Iw_inv_m(0, 1) * (torque[1] - wxIw[1])
+    + Iw_inv_m(0, 2) * (torque[2] - wxIw[2]);
+  f << dot(w_y) == Iw_inv_m(1, 0) * (torque[0] - wxIw[0])
+    + Iw_inv_m(1, 1) * (torque[1] - wxIw[1])
+    + Iw_inv_m(1, 2) * (torque[2] - wxIw[2]);
+  f << dot(w_z) == Iw_inv_m(2, 0) * (torque[0] - wxIw[0])
+    + Iw_inv_m(2, 1) * (torque[1] - wxIw[1])
+    + Iw_inv_m(2, 2) * (torque[2] - wxIw[2]);
 
   // Cost: Sum(i=0, ..., N-1){h_i' * Q * h_i} + h_N' * Q_N * h_N
   // Running cost vector consists of all states and inputs.
