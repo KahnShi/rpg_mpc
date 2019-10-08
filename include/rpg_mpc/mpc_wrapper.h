@@ -62,6 +62,11 @@ class MpcWrapper
     const T state_cost_scaling = 0.0, const T input_cost_scaling = 0.0);
 
   bool setLimits(T min_thrust, T max_thrust);
+  bool setRobotInertia(const Eigen::Ref<const Eigen::Matrix<T, 7, 1>>& mass_inertia);
+  bool setRobotConfiguration(const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor1,
+                             const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor2,
+                             const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor3,
+                             const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor4);
   // bool setCameraParameters(
   //   const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
   //   Eigen::Quaternion<T>& q_B_C);
@@ -105,8 +110,8 @@ class MpcWrapper
   Eigen::Map<Eigen::Matrix<float, kInputSize, kSamples, Eigen::ColMajor>>
     acado_inputs_{acadoVariables.u};
 
-  // Eigen::Map<Eigen::Matrix<float, kOdSize, kSamples+1, Eigen::ColMajor>>
-  //   acado_online_data_{acadoVariables.od};
+  Eigen::Map<Eigen::Matrix<float, kOdSize, kSamples+1, Eigen::ColMajor>>
+    acado_online_data_{acadoVariables.od};
 
   Eigen::Map<Eigen::Matrix<float, kRefSize, kRefSize * kSamples>>
     acado_W_{acadoVariables.W};

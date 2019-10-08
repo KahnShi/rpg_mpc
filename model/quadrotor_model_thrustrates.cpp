@@ -57,8 +57,8 @@ int main( ){
   // Control               T, w_x, w_y, w_z;
   DifferentialEquation  f;
   Function              h, hN;
-  OnlineData            I_xx, I_xy, I_xz, I_yy, I_yz, I_zz;
   OnlineData            mass;
+  OnlineData            I_xx, I_xy, I_xz, I_yy, I_yz, I_zz;
   OnlineData            p_rotor1_x, p_rotor1_y, p_rotor1_z;
   OnlineData            n_rotor1_x, n_rotor1_y, n_rotor1_z;
   OnlineData            p_rotor2_x, p_rotor2_y, p_rotor2_z;

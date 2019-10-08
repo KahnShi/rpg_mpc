@@ -179,6 +179,30 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust)
   return true;
 }
 
+  template <typename T>
+  bool MpcWrapper<T>::setRobotInertia(const Eigen::Ref<const Eigen::Matrix<T, 7, 1>>& mass_inertia){
+    acado_online_data_.block(0, 0, 7, ACADO_N+1)
+      = mass_inertia.replicate(1, ACADO_N+1).template cast<float>();
+    return true;
+  }
+
+  template <typename T>
+  bool MpcWrapper<T>::setRobotConfiguration(const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor1,
+                             const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor2,
+                             const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor3,
+                             const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor4){
+    acado_online_data_.block(7, 0, 6, ACADO_N+1)
+      = rotor1.replicate(1, ACADO_N+1).template cast<float>();
+    acado_online_data_.block(13, 0, 6, ACADO_N+1)
+      = rotor2.replicate(1, ACADO_N+1).template cast<float>();
+    acado_online_data_.block(19, 0, 6, ACADO_N+1)
+      = rotor3.replicate(1, ACADO_N+1).template cast<float>();
+    acado_online_data_.block(25, 0, 6, ACADO_N+1)
+      = rotor4.replicate(1, ACADO_N+1).template cast<float>();
+    return true;
+
+  }
+
 // Set camera extrinsics.
 // template <typename T>
 // bool MpcWrapper<T>::setCameraParameters(
