@@ -203,6 +203,14 @@ bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust)
 
   }
 
+  template <typename T>
+  bool MpcWrapper<T>::setRobotConfiguration(const Eigen::Ref<const Eigen::Matrix<T, 24, 1>>& rotors){
+    acado_online_data_.block(7, 0, 24, ACADO_N+1)
+      = rotors.replicate(1, ACADO_N+1).template cast<float>();
+    return true;
+
+  }
+
 // Set camera extrinsics.
 // template <typename T>
 // bool MpcWrapper<T>::setCameraParameters(
@@ -312,6 +320,12 @@ bool MpcWrapper<T>::update(
   {
     acado_initial_state_.segment(3,4) = -acado_initial_state_.segment(3,4);
   }
+  // test
+  std::cout << "est_state:" << "\n";
+  std::cout << state.transpose() << "\n\n";
+  // test
+  std::cout << "acado_online_data:" << "\n";
+  std::cout << acado_online_data_ << "\n\n";
 
   // Perform feedback step and reset preparation check.
   acado_feedbackStep();

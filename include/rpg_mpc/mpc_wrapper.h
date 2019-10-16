@@ -67,6 +67,7 @@ class MpcWrapper
                              const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor2,
                              const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor3,
                              const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor4);
+  bool setRobotConfiguration(const Eigen::Ref<const Eigen::Matrix<T, 24, 1>>& rotors);
   // bool setCameraParameters(
   //   const Eigen::Ref<const Eigen::Matrix<T, 3, 1>>& p_B_C,
   //   Eigen::Quaternion<T>& q_B_C);

@@ -60,7 +60,8 @@ class MpcParams {
 
   bool loadParameters(ros::NodeHandle& pnh)
   {
-    #define GET_PARAM(name) \
+    // todo
+    #define GET_PARAM(name)                            \
     if (!quadrotor_common::getParam(#name, name, pnh)) \
       return false
 
@@ -122,9 +123,6 @@ class MpcParams {
     // GET_PARAM_(max_bodyrate_z);
     GET_PARAM_(min_thrust);
     GET_PARAM_(max_thrust);
-
-    min_thrust_ /= 4.0;
-    max_thrust_ /= 4.0;
 
     // Check whether all input limits are positive.
     if(min_thrust_      <= 0.0 ||
