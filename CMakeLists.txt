@@ -80,6 +80,12 @@ cs_add_library(mpc_controller
 target_link_libraries(mpc_controller 
   mpc_wrapper)
 
+cs_add_library(mpc_hydrus_controller
+  src/mpc_hydrus_controller.cpp)
+
+target_link_libraries(mpc_hydrus_controller 
+  mpc_wrapper)
+
 # make an executable
 cs_install()
 cs_export()
@@ -88,6 +94,13 @@ cs_add_executable(mpc_controller_node
   test/mpc_node.cpp)
 target_link_libraries(mpc_controller_node
   mpc_controller
+  mpc_wrapper
+  mpc_solver)
+
+cs_add_executable(mpc_hydrus_controller_node
+  test/mpc_hydrus_node.cpp)
+target_link_libraries(mpc_hydrus_controller_node
+  mpc_hydrus_controller
   mpc_wrapper
   mpc_solver)
 

@@ -83,6 +83,20 @@ MpcWrapper<T>::MpcWrapper()
   // setCameraParameters(p_B_C, q_B_C);
   // setPointOfInterest(point_of_interest);
 
+  Eigen::Matrix<T, 7, 1> inertia;
+  inertia << 3.78603005409, 0.24011105298995972, 0.024474583566188812, -0.004694066476076841, 0.2402142435312271, 0.005894103553146124, 0.4645111560821533;
+  Eigen::Matrix<T, 24, 1> rotors;
+  rotors << -0.30833902955055237, 0.006650462746620178, 0.011263572610914707,
+    0.0, 0.0, 1.0,
+    -0.008305491879582405, -0.2933495342731476, 0.011263572610914707,
+    0.0, 0.0, 1.0,
+    0.29169386625289917, 0.0066504646092653275, 0.011263572610914707,
+    0.0, 0.0, 1.0,
+    -0.008306666277348995, 0.3069327175617218, 0.011263572610914707,
+    0.0, 0.0, 1.0;
+  setRobotInertia(inertia);
+  setRobotConfiguration(rotors);
+
   // Initialize solver.
   acado_initializeNodesByForwardSimulation();
   acado_preparationStep();
@@ -117,6 +131,8 @@ bool MpcWrapper<T>::setCosts(
 
   float state_scale{1.0};
   float input_scale{1.0};
+  float state_N_scale{1.0};
+  // float state_N_scale{100.0};
   for(int i=0; i<kSamples; i++)
   { 
     state_scale = exp(- float(i)/float(kSamples)
@@ -130,7 +146,7 @@ bool MpcWrapper<T>::setCosts(
       W_.block(kCostSize, kCostSize, kInputSize, kInputSize
         ).template cast<float>() * input_scale;
   } 
-  acado_W_end_ = WN_.template cast<float>() * state_scale;
+  acado_W_end_ = WN_.template cast<float>() * state_scale * state_N_scale;
 
   return true;
 }
@@ -320,12 +336,6 @@ bool MpcWrapper<T>::update(
   {
     acado_initial_state_.segment(3,4) = -acado_initial_state_.segment(3,4);
   }
-  // test
-  std::cout << "est_state:" << "\n";
-  std::cout << state.transpose() << "\n\n";
-  // test
-  std::cout << "acado_online_data:" << "\n";
-  std::cout << acado_online_data_ << "\n\n";
 
   // Perform feedback step and reset preparation check.
   acado_feedbackStep();
