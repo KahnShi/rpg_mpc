@@ -36,6 +36,7 @@
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <aerial_robot_msgs/MpcCommandList.h>
+#include <aerial_robot_msgs/MpcPredict.h>
 
 #include "rpg_mpc/mpc_wrapper.h"
 #include "rpg_mpc/mpc_params.h"
@@ -113,6 +114,7 @@ class MpcHydrusController {
   ros::Subscriber sub_cog_odom_;
   ros::Publisher pub_predicted_trajectory_;
   ros::Publisher pub_reference_point_markers_;
+  ros::Publisher pub_predicted_states_;
 
   // Parameters
   MpcParams<T> params_;

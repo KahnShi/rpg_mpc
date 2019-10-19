@@ -48,6 +48,8 @@ MpcHydrusController<T>::MpcHydrusController(
     nh_.advertise<nav_msgs::Path>("/mpc/trajectory_predicted", 1);
   pub_reference_point_markers_ =
     nh_.advertise<visualization_msgs::MarkerArray>("/mpc/target_points", 1);
+  pub_predicted_states_ =
+    nh_.advertise<aerial_robot_msgs::MpcPredict>("/mpc/predict_states", 1);
 
   sub_mpc_command_ = nh_.subscribe("/mpc/command", 1,
                                    &MpcHydrusController<T>::mpcCommandCallback, this);
@@ -262,6 +264,21 @@ bool MpcHydrusController<T>::publishPrediction(
   }
 
   pub_predicted_trajectory_.publish(path_msg);
+
+  aerial_robot_msgs::MpcPredict states_msg;
+  states_msg.header = path_msg.header;
+  states_msg.num = kSamples + 1;
+  states_msg.time_step = dt;
+  states_msg.predict.resize(states_msg.num);
+  for (int i = 0; i < states_msg.num; ++i){
+    for (int j = 0; j < 13; ++j)
+      states_msg.predict[i].state[j] = states(j, i);
+    if (i < states_msg.num - 1){
+      for (int j = 0; j < 4; ++j)
+        states_msg.predict[i + 1].input[j] = inputs(j, i);
+    }
+  }
+  pub_predicted_states_.publish(states_msg);
 
   visualization_msgs::MarkerArray target_markers_msg;
   visualization_msgs::Marker marker_msg;

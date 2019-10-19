@@ -13,6 +13,7 @@ import sys, select, termios, tty
 msg = """
 Reading from the keyboard  and Publishing to Twist!
 ---------------------------
+0:             preset waypoint 0, keep still
 1:             preset waypoint 1, relative dist: (1.0, 1.0, 0.5)
 2:             preset waypoint 2, relative dist: (1.0, -1.0, 0.5)
 q:             quit
@@ -49,23 +50,6 @@ class mpcTaskKeyboardInterface:
         mpc_target_odom.pose.pose.position.z += pos_offset[2]
         self.__mpc_target_odom_pub.publish(mpc_target_odom)
 
-    def __sendFlightNacCmd(self, pos_offset, period): ## todo: change to seperate file to subscribe reference state and publish nav cmd
-        nav_msg = FlightNav()
-        nav_msg.control_frame = nav_msg.WORLD_FRAME
-        nav_msg.target = nav_msg.COG
-        if axis == 0:
-            nav_msg.pos_xy_nav_mode = nav_msg.POS_MODE
-            nav_msg.target_pos_x = self.__hydrus_odom.pose.pose.position.x + move_gap
-            nav_msg.target_pos_y = self.__hydrus_odom.pose.pose.position.y
-        elif axis == 1:
-            nav_msg.pos_xy_nav_mode = nav_msg.POS_MODE
-            nav_msg.target_pos_x = self.__hydrus_odom.pose.pose.position.x
-            nav_msg.target_pos_y = self.__hydrus_odom.pose.pose.position.y + move_gap
-        elif axis == 2:
-            nav_msg.pos_z_nav_mode = nav_msg.POS_MODE
-            nav_msg.target_pos_z = self.__hydrus_odom.pose.pose.position.z + move_gap
-        self.__hydrus_nav_cmd_pub.publish(nav_msg)
-
     def getKey(self):
         tty.setraw(sys.stdin.fileno())
         select.select([sys.stdin], [], [], 0)
@@ -77,6 +61,8 @@ class mpcTaskKeyboardInterface:
 	key = self.getKey()
 	print "the key value is %d" % ord(key)
 	# takeoff and landing
+	if key == '0':
+            self.__sendMpcTargetOdom([0.0, 0.0, 0.0], 2.0)
 	if key == '1':
             self.__sendMpcTargetOdom([1.0, 1.0, 0.5], 2.0)
 	if key == '2':
