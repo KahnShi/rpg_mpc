@@ -169,15 +169,16 @@ bool MpcHydrusController<T>::setReference()
   bool quaternion_norm_ok(true);
   // if(mpc_cmd_.list.size() == 1)
   {
+    // todo: make use of end_stamp in mpc command
     Eigen::Matrix<T, kStateSize, 1> state;
     for (int i = 0; i < kStateSize; ++i)
-      state(i) = mpc_cmd_.list.front().target_state[i];
+      state(i) = mpc_cmd_.list.front().target.state[i];
     reference_states_ = state.replicate(1, kSamples+1);
     reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-                         mpc_cmd_.list.front().target_input[0],
-                         mpc_cmd_.list.front().target_input[1],
-                         mpc_cmd_.list.front().target_input[2],
-                         mpc_cmd_.list.front().target_input[3]
+                         mpc_cmd_.list.front().target.input[0],
+                         mpc_cmd_.list.front().target.input[1],
+                         mpc_cmd_.list.front().target.input[2],
+                         mpc_cmd_.list.front().target.input[3]
       ).finished().replicate(1, kSamples+1);
   }
   // else // todo

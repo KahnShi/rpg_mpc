@@ -6,6 +6,7 @@ import math
 
 from std_msgs.msg import Empty
 from nav_msgs.msg import Odometry
+from aerial_robot_msgs.msg import FlightNav
 
 import sys, select, termios, tty
 
@@ -28,6 +29,7 @@ class mpcTaskKeyboardInterface:
 
         ## pub
         self.__mpc_target_odom_pub = rospy.Publisher('/mpc/target_odom', Odometry, queue_size=1)
+        self.__mpc_target_nav_pub = rospy.Publisher('/uav/nav', FlightNav, queue_size=1)
 
         #sub
         self.__hydrus_odom = Odometry()
@@ -46,6 +48,23 @@ class mpcTaskKeyboardInterface:
         mpc_target_odom.pose.pose.position.y += pos_offset[1]
         mpc_target_odom.pose.pose.position.z += pos_offset[2]
         self.__mpc_target_odom_pub.publish(mpc_target_odom)
+
+    def __sendFlightNacCmd(self, pos_offset, period): ## todo: change to seperate file to subscribe reference state and publish nav cmd
+        nav_msg = FlightNav()
+        nav_msg.control_frame = nav_msg.WORLD_FRAME
+        nav_msg.target = nav_msg.COG
+        if axis == 0:
+            nav_msg.pos_xy_nav_mode = nav_msg.POS_MODE
+            nav_msg.target_pos_x = self.__hydrus_odom.pose.pose.position.x + move_gap
+            nav_msg.target_pos_y = self.__hydrus_odom.pose.pose.position.y
+        elif axis == 1:
+            nav_msg.pos_xy_nav_mode = nav_msg.POS_MODE
+            nav_msg.target_pos_x = self.__hydrus_odom.pose.pose.position.x
+            nav_msg.target_pos_y = self.__hydrus_odom.pose.pose.position.y + move_gap
+        elif axis == 2:
+            nav_msg.pos_z_nav_mode = nav_msg.POS_MODE
+            nav_msg.target_pos_z = self.__hydrus_odom.pose.pose.position.z + move_gap
+        self.__hydrus_nav_cmd_pub.publish(nav_msg)
 
     def getKey(self):
         tty.setraw(sys.stdin.fileno())
