@@ -182,6 +182,9 @@ bool MpcHydrusController<T>::setReference()
                          mpc_cmd_.list.front().target.input[2],
                          mpc_cmd_.list.front().target.input[3]
       ).finished().replicate(1, kSamples+1);
+    double period = (mpc_cmd_.list.front().end_stamp - mpc_cmd_.list.front().start_stamp).toSec();
+    int end_state_id = std::round(period / dt);
+    mpc_wrapper_.setCosts(end_state_id, 0.0, 0.0);
   }
   // else // todo
   // {
@@ -266,7 +269,7 @@ bool MpcHydrusController<T>::publishPrediction(
   pub_predicted_trajectory_.publish(path_msg);
 
   aerial_robot_msgs::MpcPredict states_msg;
-  states_msg.header = path_msg.header;
+  states_msg.header = path_msg.header; // todo: which stamp to use
   states_msg.num = kSamples + 1;
   states_msg.time_step = dt;
   states_msg.predict.resize(states_msg.num);

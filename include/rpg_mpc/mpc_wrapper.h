@@ -61,6 +61,10 @@ class MpcWrapper
     const Eigen::Ref<const Eigen::Matrix<T, kInputSize, kInputSize>> R,
     const T state_cost_scaling = 0.0, const T input_cost_scaling = 0.0);
 
+  bool setCosts(
+    const int end_state_id,
+    const T state_cost_scaling = 0.0, const T input_cost_scaling = 0.0);
+
   bool setLimits(T min_thrust, T max_thrust);
   bool setRobotInertia(const Eigen::Ref<const Eigen::Matrix<T, 7, 1>>& mass_inertia);
   bool setRobotConfiguration(const Eigen::Ref<const Eigen::Matrix<T, 6, 1>>& rotor1,
