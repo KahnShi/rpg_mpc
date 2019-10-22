@@ -55,6 +55,8 @@ MpcHydrusController<T>::MpcHydrusController(
                                    &MpcHydrusController<T>::mpcCommandCallback, this);
   sub_cog_odom_ = nh_.subscribe("/uav/cog/odom", 1,
                                    &MpcHydrusController<T>::cogOdomCallback, this);
+  sub_mpc_cost_gain_ = nh_.subscribe("/mpc/cost_gain", 1,
+                                   &MpcHydrusController<T>::mpcCostGainCallback, this);
 
   if(!params_.loadParameters(pnh_)) // todo
   {
@@ -79,6 +81,20 @@ void MpcHydrusController<T>::mpcCommandCallback(const aerial_robot_msgs::MpcComm
 template <typename T>
 void MpcHydrusController<T>::cogOdomCallback(const nav_msgs::Odometry::ConstPtr& msg){
   cog_odom_ = *msg;
+}
+
+template <typename T>
+void MpcHydrusController<T>::mpcCostGainCallback(const aerial_robot_msgs::MpcCostGain::ConstPtr& msg){
+  Eigen::Matrix<T, kStateSize, kStateSize> Q = Eigen::Matrix<T, kStateSize, kStateSize>::Zero();
+  Q(kPosX, kPosX) = Q(kPosY, kPosY) = msg->pos_xy_gain;
+  Q(kPosZ, kPosZ) = msg->pos_z_gain;
+  Q(kVelX, kVelX) = Q(kVelY, kVelY) = Q(kVelZ, kVelZ) = msg->vel_gain;
+  Q(kRateX, kRateX) = Q(kRateY, kRateY) = Q(kRateZ, kRateZ) = msg->ang_vel_gain;
+  Q(kOriW, kOriW) = Q(kOriX, kOriX) = Q(kOriY, kOriY) = Q(kOriZ, kOriZ) = msg->att_gain;
+  Eigen::Matrix<T, kInputSize, kInputSize> R = Eigen::Matrix<T, kInputSize, kInputSize>::Zero();
+  for (int i = 0; i < kInputSize; ++i)
+    R(i, i) = msg->thrust_gain;
+  mpc_wrapper_.setCosts(Q, R, 0, 0);
 }
 
 template <typename T>

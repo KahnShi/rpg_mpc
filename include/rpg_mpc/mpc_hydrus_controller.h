@@ -37,6 +37,7 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <aerial_robot_msgs/MpcCommandList.h>
 #include <aerial_robot_msgs/MpcPredict.h>
+#include <aerial_robot_msgs/MpcCostGain.h>
 
 #include "rpg_mpc/mpc_wrapper.h"
 #include "rpg_mpc/mpc_params.h"
@@ -92,6 +93,7 @@ class MpcHydrusController {
 
   void mpcCommandCallback(const aerial_robot_msgs::MpcCommandList::ConstPtr& msg);
   void cogOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);
+  void mpcCostGainCallback(const aerial_robot_msgs::MpcCostGain::ConstPtr& msg);
   bool setStateEstimate();
   bool setReference();
   void updateMpc();
@@ -120,6 +122,7 @@ class MpcHydrusController {
   // Subscribers and publisher.
   ros::Subscriber sub_mpc_command_;
   ros::Subscriber sub_cog_odom_;
+  ros::Subscriber sub_mpc_cost_gain_;
   ros::Publisher pub_predicted_trajectory_;
   ros::Publisher pub_reference_point_markers_;
   ros::Publisher pub_predicted_states_;
