@@ -66,6 +66,12 @@ enum INPUT{
   kThrust4 = 3
 };
 
+enum MPC_DATA{
+  NO_USE_PREVIOUS_DATA = 1,
+  PREVIOUS_DATA_UNREADY = 2,
+  PREVIOUS_DATA_READY = 3
+};
+
 template <typename T>
 class MpcHydrusController {
  public:
@@ -105,6 +111,8 @@ class MpcHydrusController {
 
   bool setNewParams(MpcParams<T>& params);
 
+  void updateEndState(Eigen::Matrix<T, kStateSize, 1> & end_state);
+
   // Handles
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
@@ -137,6 +145,9 @@ class MpcHydrusController {
   Eigen::Matrix<T, kStateSize, kSamples+1> predicted_states_;
   Eigen::Matrix<T, kInputSize, kSamples> predicted_inputs_;
   Eigen::Matrix<T, 3, 1> point_of_interest_;
+
+  Eigen::Matrix<T, kStateSize, 1> end_state_;
+  int mpc_data_state_;
 };
 
 
