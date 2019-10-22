@@ -64,6 +64,8 @@ MpcHydrusController<T>::MpcHydrusController(
   }
   setNewParams(params_);
 
+  mpc_data_state_ = PREVIOUS_DATA_UNREADY;
+
   preparation_thread_ = std::thread(&MpcWrapper<T>::prepare, mpc_wrapper_);
 }
 
@@ -99,6 +101,9 @@ void MpcHydrusController<T>::updateMpc()
   mpc_wrapper_.update(est_state_, do_preparation_step);
   mpc_wrapper_.getStates(predicted_states_);
   mpc_wrapper_.getInputs(predicted_inputs_);
+
+  if (mpc_data_state_ == PREVIOUS_DATA_UNREADY)
+    mpc_data_state_ = PREVIOUS_DATA_READY;
 
   // Publish the predicted trajectory.
   publishPrediction(predicted_states_, predicted_inputs_, call_time);
@@ -172,17 +177,33 @@ bool MpcHydrusController<T>::setReference()
   // if(mpc_cmd_.list.size() == 1)
   {
     // todo: make use of end_stamp in mpc command
-    Eigen::Matrix<T, kStateSize, 1> state;
+    Eigen::Matrix<T, kStateSize, 1> end_state;
     for (int i = 0; i < kStateSize; ++i)
-      state(i) = mpc_cmd_.list.front().target.state[i];
-    reference_states_ = state.replicate(1, kSamples+1);
-    reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-                         mpc_cmd_.list.front().target.input[0],
-                         mpc_cmd_.list.front().target.input[1],
-                         mpc_cmd_.list.front().target.input[2],
-                         mpc_cmd_.list.front().target.input[3]
-      ).finished().replicate(1, kSamples+1);
-    double period = (mpc_cmd_.list.front().end_stamp - mpc_cmd_.list.front().start_stamp).toSec();
+      end_state(i) = mpc_cmd_.list.front().target.state[i];
+    updateEndState(end_state);
+    if (!mpc_data_state_ == PREVIOUS_DATA_READY){
+      reference_states_ = end_state.replicate(1, kSamples+1);
+      reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
+                           mpc_cmd_.list.front().target.input[0],
+                           mpc_cmd_.list.front().target.input[1],
+                           mpc_cmd_.list.front().target.input[2],
+                           mpc_cmd_.list.front().target.input[3]
+                           ).finished().replicate(1, kSamples+1);
+    }
+    else{ // set reference states/inputs depending on previous mpc results
+      // method 1:
+      reference_states_ = end_state.replicate(1, kSamples+1);
+
+      // method 2:
+      // reference_states_ = predicted_states_;
+      // for (int j = 0; j < kStateSize; ++j)
+      //   reference_states_(j, kSamples) = end_state(j);
+
+      reference_inputs_.block(0, 0, kInputSize, kSamples) = predicted_inputs_;
+      for (int j = 0; j < kInputSize; ++j)
+        reference_inputs_(j, kSamples) = predicted_inputs_(j, kSamples - 1);
+    }
+    double period = (mpc_cmd_.list.front().end_stamp - mpc_cmd_.list.front().start_stamp).toSec(); // might be negative
     int end_state_id = std::round(period / dt);
     mpc_wrapper_.setCosts(end_state_id, 0.0, 0.0);
   }
@@ -335,6 +356,21 @@ bool MpcHydrusController<T>::setNewParams(MpcParams<T>& params)
   // mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
   params.changed_ = false;
   return true;
+}
+
+template <typename T>
+void MpcHydrusController<T>::updateEndState(Eigen::Matrix<T, kStateSize, 1> & end_state){
+  bool state_change = false;
+  for (int i = 0; i < kStateSize; ++i){
+    if (end_state_(i) != end_state(i)){
+      state_change = true;
+      break;
+    }
+  }
+  // if (mpc_data_state_ == PREVIOUS_DATA_READY && end_state_ != end_state)
+  if (mpc_data_state_ == PREVIOUS_DATA_READY && state_change)
+    mpc_data_state_ = PREVIOUS_DATA_UNREADY;
+  end_state_ = end_state;
 }
 
 
