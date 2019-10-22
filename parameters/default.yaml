@@ -24,7 +24,7 @@
 Q_pos_xy:     200   # Cost for horizontal positon error
 Q_pos_z:      500   # Cost for vertical position error
 Q_attitude:   50    # Cost for attitude error
-Q_velocity:   10    # Cost for velocity error
+Q_velocity:   50    # Cost for velocity error
 Q_angvelocity:   10    # Cost for angular velocity error
 
 # Cost on Inputs
