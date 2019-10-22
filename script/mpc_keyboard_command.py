@@ -5,6 +5,7 @@ import time
 import math
 
 from std_msgs.msg import Empty
+from std_msgs.msg import Bool
 from nav_msgs.msg import Odometry
 from aerial_robot_msgs.msg import FlightNav
 
@@ -16,6 +17,8 @@ Reading from the keyboard  and Publishing to Twist!
 0:             preset waypoint 0, keep still
 1:             preset waypoint 1, relative dist: (1.0, 1.0, 0.5)
 2:             preset waypoint 2, relative dist: (1.0, -1.0, 0.5)
+s:             mpc control stops
+c:             mpc control continues
 q:             quit
 
 please don't have caps lock on.
@@ -31,6 +34,7 @@ class mpcTaskKeyboardInterface:
         ## pub
         self.__mpc_target_odom_pub = rospy.Publisher('/mpc/target_odom', Odometry, queue_size=1)
         self.__mpc_target_nav_pub = rospy.Publisher('/uav/nav', FlightNav, queue_size=1)
+        self.__mpc_stop_flag_pub = rospy.Publisher('/mpc/stop_cmd', Bool, queue_size=1)
 
         #sub
         self.__hydrus_odom = Odometry()
@@ -67,6 +71,16 @@ class mpcTaskKeyboardInterface:
             self.__sendMpcTargetOdom([1.0, 1.0, 0.5], 2.0)
 	if key == '2':
             self.__sendMpcTargetOdom([1.0, -1.0, 0.5], 2.0)
+	if key == 's':
+            print "Mpc control stops"
+            msg = Bool()
+            msg.data = True
+            self.__mpc_stop_flag_pub.publish(msg)
+	if key == 'c':
+            print "Mpc control continues"
+            msg = Bool()
+            msg.data = False
+            self.__mpc_stop_flag_pub.publish(msg)
 	if key == 'q':
             print "force quit by visit unexisted function"
 	    error()
