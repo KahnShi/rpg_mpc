@@ -89,9 +89,24 @@ int main( ){
   f << dot(q_x) ==  0.5 * ( w_x * q_w + w_z * q_y - w_y * q_z);
   f << dot(q_y) ==  0.5 * ( w_y * q_w - w_z * q_x + w_x * q_z);
   f << dot(q_z) ==  0.5 * ( w_z * q_w + w_y * q_x - w_x * q_y);
-  f << dot(v_x) ==  2 * ( q_w * q_y + q_x * q_z ) * (T_1 + T_2 + T_3 + T_4) / mass;
-  f << dot(v_y) ==  2 * ( q_y * q_z - q_w * q_x ) * (T_1 + T_2 + T_3 + T_4) / mass;
-  f << dot(v_z) ==  ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * (T_1 + T_2 + T_3 + T_4) / mass - g_z;
+  f << dot(v_x) ==
+    (
+     ( 1 - 2 * q_z * q_z - 2 * q_y * q_y ) * (n_rotor1_x * T_1 + n_rotor2_x * T_2 + n_rotor3_x * T_3 + n_rotor4_x * T_4)
+     + 2 * ( q_x * q_y - q_z * q_w ) * (n_rotor1_y * T_1 + n_rotor2_y * T_2 + n_rotor3_y * T_3 + n_rotor4_y * T_4)
+     + 2 * ( q_w * q_y + q_x * q_z ) * (n_rotor1_z * T_1 + n_rotor2_z * T_2 + n_rotor3_z * T_3 + n_rotor4_z * T_4)
+     )/ mass;
+  f << dot(v_y) ==
+    (
+     2 * ( q_x * q_y + q_z * q_w ) * (n_rotor1_x * T_1 + n_rotor2_x * T_2 + n_rotor3_x * T_3 + n_rotor4_x * T_4)
+     + ( 1 - 2 * q_z * q_z - 2 * q_x * q_x ) * (n_rotor1_y * T_1 + n_rotor2_y * T_2 + n_rotor3_y * T_3 + n_rotor4_y * T_4)
+     + 2 * ( q_y * q_z - q_w * q_x ) * (n_rotor1_z * T_1 + n_rotor2_z * T_2 + n_rotor3_z * T_3 + n_rotor4_z * T_4)
+     )/ mass;
+  f << dot(v_z) ==
+    (
+     2 * ( q_x * q_z - q_y * q_w ) * (n_rotor1_x * T_1 + n_rotor2_x * T_2 + n_rotor3_x * T_3 + n_rotor4_x * T_4)
+     + 2 * ( q_y * q_z + q_x * q_w ) * (n_rotor1_y * T_1 + n_rotor2_y * T_2 + n_rotor3_y * T_3 + n_rotor4_y * T_4)
+     + ( 1 - 2 * q_x * q_x - 2 * q_y * q_y ) * (n_rotor1_z * T_1 + n_rotor2_z * T_2 + n_rotor3_z * T_3 + n_rotor4_z * T_4)
+     )/ mass - g_z;
   // sum pi x (T_i * ni) + m_rf * T_i * ni
   IntermediateState torque[3];
   torque[0] = moment_constant * rotor_direction[0] * n_rotor1_x * T_1
