@@ -3,6 +3,7 @@ import rospy
 import sys
 import time
 import math
+import tf
 
 from std_msgs.msg import Empty
 from std_msgs.msg import Bool
@@ -47,11 +48,26 @@ class mpcTaskKeyboardInterface:
 
     def __sendMpcTargetOdom(self, pos_offset, period):
         mpc_target_odom = Odometry()
-        mpc_target_odom = self.__hydrus_odom
         mpc_target_odom.header.stamp = rospy.Time.now() + rospy.Duration(period)
-        mpc_target_odom.pose.pose.position.x += pos_offset[0]
-        mpc_target_odom.pose.pose.position.y += pos_offset[1]
-        mpc_target_odom.pose.pose.position.z += pos_offset[2]
+        mpc_target_odom.pose.pose.position.x = self.__hydrus_odom.pose.pose.position.x + pos_offset[0]
+        mpc_target_odom.pose.pose.position.y = self.__hydrus_odom.pose.pose.position.y + pos_offset[1]
+        mpc_target_odom.pose.pose.position.z = self.__hydrus_odom.pose.pose.position.z + pos_offset[2]
+        current_quaternion = (
+            self.__hydrus_odom.pose.pose.orientation.x,
+            self.__hydrus_odom.pose.pose.orientation.y,
+            self.__hydrus_odom.pose.pose.orientation.z,
+            self.__hydrus_odom.pose.pose.orientation.w)
+        current_euler = tf.transformations.euler_from_quaternion(current_quaternion)
+        roll = current_euler[0]
+        pitch = current_euler[1]
+        yaw = current_euler[2]
+
+        target_quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw)
+        mpc_target_odom.pose.pose.orientation.x = target_quaternion[0]
+        mpc_target_odom.pose.pose.orientation.y = target_quaternion[1]
+        mpc_target_odom.pose.pose.orientation.z = target_quaternion[2]
+        mpc_target_odom.pose.pose.orientation.w = target_quaternion[3]
+
         self.__mpc_target_odom_pub.publish(mpc_target_odom)
 
     def getKey(self):
