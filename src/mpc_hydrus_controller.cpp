@@ -314,8 +314,19 @@ bool MpcHydrusController<T>::publishPrediction(
     for (int j = 0; j < 13; ++j)
       states_msg.predict[i].state[j] = states(j, i);
     if (i < states_msg.num - 1){
-      for (int j = 0; j < 4; ++j)
-        states_msg.predict[i + 1].input[j] = inputs(j, i);
+      Eigen::Quaternion<T> q_orien(states_msg.predict[i].state[kOriW],
+                                   states_msg.predict[i].state[kOriX],
+                                   states_msg.predict[i].state[kOriY],
+                                   states_msg.predict[i].state[kOriZ]);
+      for (int j = 0; j < 4; ++j){
+        Eigen::Matrix<T, 3, 1> n_rotor_body, n_rotor_world;
+        for (int k = 0; k < 3; ++k){
+          n_rotor_body(k) = mpc_cmd_.list.front().n_rotor[3 * j + k];
+        }
+        n_rotor_world = q_orien * n_rotor_body;
+        for (int k = 0; k < 3; ++k)
+          states_msg.predict[i + 1].input[j * 3 + k] = n_rotor_world(k) * inputs(j, i);
+      }
     }
   }
   pub_predicted_states_.publish(states_msg);
