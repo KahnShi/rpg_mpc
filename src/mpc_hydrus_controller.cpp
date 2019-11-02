@@ -190,14 +190,18 @@ bool MpcHydrusController<T>::setReference()
   Eigen::Quaternion<T> q_heading;
   Eigen::Quaternion<T> q_orientation;
   bool quaternion_norm_ok(true);
-  // if(mpc_cmd_.list.size() == 1)
+  if(mpc_cmd_.list.size() == 1)
   {
     // todo: make use of end_stamp in mpc command
     Eigen::Matrix<T, kStateSize, 1> end_state;
     for (int i = 0; i < kStateSize; ++i)
       end_state(i) = mpc_cmd_.list.front().target.state[i];
+    if(end_state.segment(kOriW,4).dot(
+     est_state_.segment(kOriW,4))<0.0)
+      end_state.block(kOriW,0,4,1) =
+        -end_state.block(kOriW,0,4,1);
     updateEndState(end_state);
-    if (mpc_data_state_ !== PREVIOUS_DATA_READY){
+    if (mpc_data_state_ != PREVIOUS_DATA_READY){
       reference_states_ = end_state.replicate(1, kSamples+1);
       reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
                            mpc_cmd_.list.front().target.input[0],
@@ -223,40 +227,41 @@ bool MpcHydrusController<T>::setReference()
     int end_state_id = std::round(period / dt);
     mpc_wrapper_.setCosts(end_state_id, 0.0, 0.0);
   }
-  // else // todo
-  // {
-  //   std::list<quadrotor_common::TrajectoryPoint>::const_iterator iterator(
-  //     reference_trajectory.points.begin());
-  //   for(int i=0; i<kSamples+1; i++)
-  //   {
-  //     while(iterator->time_from_start.toSec() < i*dt &&
-  //           iterator!=reference_trajectory.points.end())
-  //     {
-  //       iterator++;
-  //     }
-  //     q_heading = Eigen::Quaternion<T>(Eigen::AngleAxis<T>(
-  //       iterator->heading, Eigen::Matrix<T,3,1>::UnitZ()));
-  //     q_orientation = q_heading * iterator->orientation.template cast<T>();
-  //     reference_states_.col(i) << iterator->position.template cast<T>(),
-  //                                 q_orientation.w(),
-  //                                 q_orientation.x(),
-  //                                 q_orientation.y(),
-  //                                 q_orientation.z(),
-  //                                 iterator->velocity.template cast<T>(),
-  //                                 iterator->bodyrates.template cast<T>();
-  //     if(reference_states_.col(i).segment(kOriW,4).dot(
-  //       est_state_.segment(kOriW,4))<0.0)
-  //         reference_states_.block(kOriW,i,4,1) =
-  //           -reference_states_.block(kOriW,i,4,1);
-  //     acceleration << iterator->acceleration.template cast<T>() - gravity;
-  //     reference_inputs_.col(i) << acceleration.norm() / 4.0,
-  //       acceleration.norm() / 4.0,
-  //       acceleration.norm() / 4.0,
-  //       acceleration.norm() / 4.0;
-  //     quaternion_norm_ok &= abs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
-  //   }
-  // }
-  return quaternion_norm_ok;
+  else // todo
+  {
+    int cmd_id = 0;
+    for(int i=0; i<kSamples+1; i++)
+    {
+      while(mpc_cmd_.list[cmd_id].end_stamp.toSec() - mpc_cmd_.list[cmd_id].start_stamp.toSec() < i*dt &&
+            cmd_id != mpc_cmd_.list.size() - 1)
+      {
+        cmd_id++;
+      }
+      Eigen::Matrix<T, kStateSize, 1> target_state;
+      for (int j = 0; j < kStateSize; ++j)
+        target_state(j) = mpc_cmd_.list[cmd_id].target.state[j];
+      reference_states_.col(i) = target_state;
+      if(reference_states_.col(i).segment(kOriW,4).dot(
+        est_state_.segment(kOriW,4))<0.0)
+          reference_states_.block(kOriW,i,4,1) =
+            -reference_states_.block(kOriW,i,4,1);
+      // quaternion_norm_ok &= abs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
+    }
+    if (mpc_data_state_ == PREVIOUS_DATA_READY){
+      reference_inputs_.block(0, 0, kInputSize, kSamples) = predicted_inputs_;
+      for (int j = 0; j < kInputSize; ++j)
+        reference_inputs_(j, kSamples) = predicted_inputs_(j, kSamples - 1);
+    }
+    else{
+      for(int i=0; i<kSamples+1; i++){
+        Eigen::Matrix<T, kInputSize, 1> target_input;
+        for (int i = 0; i < kInputSize; ++i)
+          target_input(i) = mpc_cmd_.list[cmd_id].target.input[i];
+        reference_inputs_.col(i) = target_input;
+      }
+    }
+  }
+  // return quaternion_norm_ok;
 }
 
 template <typename T>
@@ -353,9 +358,9 @@ bool MpcHydrusController<T>::publishPrediction(
   target_markers_msg.markers[1].color.r = 1.0;
   target_markers_msg.markers[1].color.g = 0.0;
   target_markers_msg.markers[1].color.b = 0.0;
-  target_markers_msg.markers[1].pose.position.x = reference_states_(kPosX, 0);
-  target_markers_msg.markers[1].pose.position.y = reference_states_(kPosY, 0);
-  target_markers_msg.markers[1].pose.position.z = reference_states_(kPosZ, 0);
+  target_markers_msg.markers[1].pose.position.x = reference_states_(kPosX, kSamples);
+  target_markers_msg.markers[1].pose.position.y = reference_states_(kPosY, kSamples);
+  target_markers_msg.markers[1].pose.position.z = reference_states_(kPosZ, kSamples);
   pub_reference_point_markers_.publish(target_markers_msg);
 
   return true;
