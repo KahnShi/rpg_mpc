@@ -197,7 +197,7 @@ bool MpcHydrusController<T>::setReference()
     for (int i = 0; i < kStateSize; ++i)
       end_state(i) = mpc_cmd_.list.front().target.state[i];
     updateEndState(end_state);
-    if (!mpc_data_state_ == PREVIOUS_DATA_READY){
+    if (mpc_data_state_ !== PREVIOUS_DATA_READY){
       reference_states_ = end_state.replicate(1, kSamples+1);
       reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
                            mpc_cmd_.list.front().target.input[0],
