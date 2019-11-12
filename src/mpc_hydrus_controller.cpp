@@ -143,6 +143,7 @@ void MpcHydrusController<T>::updateMpc()
 
 template <typename T>
 void MpcHydrusController<T>::updateRobotModel(){
+  // todo: update robot config w.r.t. change in each cmd msg
   Eigen::Matrix<T, 7, 1> inertia;
   inertia(0) =  mpc_cmd_.list.front().mass;
   for (int i = 0; i < 6; ++i)
@@ -338,14 +339,14 @@ bool MpcHydrusController<T>::publishPrediction(
 
   visualization_msgs::MarkerArray target_markers_msg;
   visualization_msgs::Marker marker_msg;
-  target_markers_msg.markers.resize(2);
+  target_markers_msg.markers.resize(kSamples + 1);
   target_markers_msg.markers[0].header.frame_id = "/world";
   target_markers_msg.markers[0].id = 0;
   target_markers_msg.markers[0].type = target_markers_msg.markers[0].SPHERE;
   target_markers_msg.markers[0].action = target_markers_msg.markers[0].ADD;
-  target_markers_msg.markers[0].pose.position.x = states(kPosX, 0);
-  target_markers_msg.markers[0].pose.position.y = states(kPosY, 0);
-  target_markers_msg.markers[0].pose.position.z = states(kPosZ, 0);
+  target_markers_msg.markers[0].pose.position.x = reference_states_(kPosX, 0);
+  target_markers_msg.markers[0].pose.position.y = reference_states_(kPosY, 0);
+  target_markers_msg.markers[0].pose.position.z = reference_states_(kPosZ, 0);
   target_markers_msg.markers[0].scale.x = 0.1;
   target_markers_msg.markers[0].scale.y = 0.1;
   target_markers_msg.markers[0].scale.z = 0.1;
@@ -353,14 +354,19 @@ bool MpcHydrusController<T>::publishPrediction(
   target_markers_msg.markers[0].color.r = 0.0;
   target_markers_msg.markers[0].color.g = 0.0;
   target_markers_msg.markers[0].color.b = 1.0;
-  target_markers_msg.markers[1] = target_markers_msg.markers[0];
-  target_markers_msg.markers[1].id = 1;
-  target_markers_msg.markers[1].color.r = 1.0;
-  target_markers_msg.markers[1].color.g = 0.0;
-  target_markers_msg.markers[1].color.b = 0.0;
-  target_markers_msg.markers[1].pose.position.x = reference_states_(kPosX, kSamples);
-  target_markers_msg.markers[1].pose.position.y = reference_states_(kPosY, kSamples);
-  target_markers_msg.markers[1].pose.position.z = reference_states_(kPosZ, kSamples);
+  for (int i = 1; i < kSamples + 1; ++i){
+    target_markers_msg.markers[i] = target_markers_msg.markers[0];
+    target_markers_msg.markers[i].id = i;
+    target_markers_msg.markers[i].color.a = 0.3;
+    target_markers_msg.markers[i].pose.position.x = reference_states_(kPosX, i);
+    target_markers_msg.markers[i].pose.position.y = reference_states_(kPosY, i);
+    target_markers_msg.markers[i].pose.position.z = reference_states_(kPosZ, i);
+  }
+
+  target_markers_msg.markers[kSamples].color.r = 1.0;
+  target_markers_msg.markers[kSamples].color.g = 0.0;
+  target_markers_msg.markers[kSamples].color.b = 0.0;
+  target_markers_msg.markers[kSamples].color.a = 0.6;
   pub_reference_point_markers_.publish(target_markers_msg);
 
   return true;
