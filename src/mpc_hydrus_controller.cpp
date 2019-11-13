@@ -94,7 +94,8 @@ void MpcHydrusController<T>::mpcCostGainCallback(const aerial_robot_msgs::MpcCos
   Eigen::Matrix<T, kInputSize, kInputSize> R = Eigen::Matrix<T, kInputSize, kInputSize>::Zero();
   for (int i = 0; i < kInputSize; ++i)
     R(i, i) = msg->thrust_gain;
-  mpc_wrapper_.setCosts(Q, R, 0, 0);
+  // mpc_wrapper_.setCosts(Q, R, 0, 0);
+  mpc_wrapper_.setCosts(Q, R, 1.0, 1.0);
 }
 
 template <typename T>
@@ -261,6 +262,9 @@ bool MpcHydrusController<T>::setReference()
         reference_inputs_.col(i) = target_input;
       }
     }
+    // test
+    // mpc_wrapper_.setCosts(kSamples, 0.0, 0.0);
+    mpc_wrapper_.setCosts(kSamples, 1.0, 1.0);
   }
   // return quaternion_norm_ok;
 }
@@ -295,7 +299,7 @@ bool MpcHydrusController<T>::publishPrediction(
   geometry_msgs::PoseStamped pose;
   T dt = mpc_wrapper_.getTimestep();
 
-  for(int i=0; i<kSamples; i++)
+  for(int i=0; i< kSamples + 1; i++)
   {
     pose.header.stamp = time + ros::Duration(i*dt);
     pose.header.seq = i;

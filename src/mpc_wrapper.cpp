@@ -170,13 +170,14 @@ bool MpcWrapper<T>::setCosts(
   for(int i=0; i<kSamples; i++)
   {
     if (i < end_state_id){
-      state_scale = exp(- float(i)/float(end_state_id)
+      state_scale = exp(float(i)/float(end_state_id)
                         * float(state_cost_scaling));
-      input_scale = exp(- float(i)/float(end_state_id)
+      input_scale = exp(float(i)/float(end_state_id)
                         * float(input_cost_scaling));
     }
     else if (i == end_state_id){
-      state_scale = 100.0; // large gain when in end time
+      // state_scale = 100.0; // large gain when in end time
+      state_scale = 1.0; // large gain when in end time
       input_scale = 1.0;
     }
     else{
