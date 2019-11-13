@@ -49,6 +49,8 @@ class mpcTaskKeyboardInterface:
         self.__hydrus_cog_odom_sub = rospy.Subscriber('/uav/cog/odom', Odometry, self.__cogOdomCallback)
 
         self.__circle_motion_flag = False
+        self.__circle_mpc_mode = True ## otherwise: flight_nav pos_vel cmd mode
+
         ## simulation test
         self.__circle_raidus = 5.0
         self.__ang_vel = 0.05 ## 0.3
@@ -101,43 +103,59 @@ class mpcTaskKeyboardInterface:
         self.__mpc_target_waypoints_pub.publish(mpc_waypoints)
 
     def __sendCircleCommand(self):
-        time_gap = 0.1
-        candidate = 21
-        mpc_waypoints = MpcWaypointList()
-        mpc_waypoints.mode = mpc_waypoints.FULL
-        mpc_waypoints.header.stamp = rospy.Time.now()
+        if self.__circle_mpc_mode:
+            time_gap = 0.1
+            candidate = 21
+            mpc_waypoints = MpcWaypointList()
+            mpc_waypoints.mode = mpc_waypoints.FULL
+            mpc_waypoints.header.stamp = rospy.Time.now()
 
-        for i in range(0, candidate):
-            mpc_waypoints.list.append(Odometry())
-            mpc_waypoints.list[i].header.stamp = mpc_waypoints.header.stamp + rospy.Duration(time_gap * i)
-            relative_time = mpc_waypoints.list[i].header.stamp.to_sec() - self.__circle_start_time.to_sec()
-            mpc_waypoints.list[i].pose.pose.position.x = self.__circle_start_odom.pose.pose.position.x - self.__circle_raidus + self.__circle_raidus * math.cos(relative_time * self.__ang_vel + self.__circle_start_ang)
-            mpc_waypoints.list[i].pose.pose.position.y = self.__circle_start_odom.pose.pose.position.y + self.__circle_raidus * math.sin(relative_time * self.__ang_vel + self.__circle_start_ang)
-            mpc_waypoints.list[i].pose.pose.position.z = self.__circle_start_odom.pose.pose.position.z
-            current_quaternion = (
-                self.__circle_start_odom.pose.pose.orientation.x,
-                self.__circle_start_odom.pose.pose.orientation.y,
-                self.__circle_start_odom.pose.pose.orientation.z,
-                self.__circle_start_odom.pose.pose.orientation.w)
-            current_euler = tf.transformations.euler_from_quaternion(current_quaternion)
-            roll = current_euler[0]
-            pitch = current_euler[1]
-            yaw = current_euler[2]
+            for i in range(0, candidate):
+                mpc_waypoints.list.append(Odometry())
+                mpc_waypoints.list[i].header.stamp = mpc_waypoints.header.stamp + rospy.Duration(time_gap * i)
+                relative_time = mpc_waypoints.list[i].header.stamp.to_sec() - self.__circle_start_time.to_sec()
+                mpc_waypoints.list[i].pose.pose.position.x = self.__circle_start_odom.pose.pose.position.x - self.__circle_raidus + self.__circle_raidus * math.cos(relative_time * self.__ang_vel + self.__circle_start_ang)
+                mpc_waypoints.list[i].pose.pose.position.y = self.__circle_start_odom.pose.pose.position.y + self.__circle_raidus * math.sin(relative_time * self.__ang_vel + self.__circle_start_ang)
+                mpc_waypoints.list[i].pose.pose.position.z = self.__circle_start_odom.pose.pose.position.z
+                current_quaternion = (
+                    self.__circle_start_odom.pose.pose.orientation.x,
+                    self.__circle_start_odom.pose.pose.orientation.y,
+                    self.__circle_start_odom.pose.pose.orientation.z,
+                    self.__circle_start_odom.pose.pose.orientation.w)
+                current_euler = tf.transformations.euler_from_quaternion(current_quaternion)
+                roll = current_euler[0]
+                pitch = current_euler[1]
+                yaw = current_euler[2]
 
-            target_quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw)
-            mpc_waypoints.list[i].pose.pose.orientation.x = target_quaternion[0]
-            mpc_waypoints.list[i].pose.pose.orientation.y = target_quaternion[1]
-            mpc_waypoints.list[i].pose.pose.orientation.z = target_quaternion[2]
-            mpc_waypoints.list[i].pose.pose.orientation.w = target_quaternion[3]
+                target_quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw)
+                mpc_waypoints.list[i].pose.pose.orientation.x = target_quaternion[0]
+                mpc_waypoints.list[i].pose.pose.orientation.y = target_quaternion[1]
+                mpc_waypoints.list[i].pose.pose.orientation.z = target_quaternion[2]
+                mpc_waypoints.list[i].pose.pose.orientation.w = target_quaternion[3]
 
-            mpc_waypoints.list[i].twist.twist.linear.x = -math.sin(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
-            mpc_waypoints.list[i].twist.twist.linear.y = math.cos(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
-            mpc_waypoints.list[i].twist.twist.linear.z = 0.0
-            mpc_waypoints.list[i].twist.twist.angular.x = 0.0
-            mpc_waypoints.list[i].twist.twist.angular.y = 0.0
-            mpc_waypoints.list[i].twist.twist.angular.z = self.__ang_vel
+                mpc_waypoints.list[i].twist.twist.linear.x = -math.sin(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
+                mpc_waypoints.list[i].twist.twist.linear.y = math.cos(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
+                mpc_waypoints.list[i].twist.twist.linear.z = 0.0
+                mpc_waypoints.list[i].twist.twist.angular.x = 0.0
+                mpc_waypoints.list[i].twist.twist.angular.y = 0.0
+                ## mpc_waypoints.list[i].twist.twist.angular.z = self.__ang_vel
+                mpc_waypoints.list[i].twist.twist.angular.z = 0.0
 
-        self.__mpc_target_waypoints_pub.publish(mpc_waypoints)
+            self.__mpc_target_waypoints_pub.publish(mpc_waypoints)
+        else: ## direct flight_nav pos_vel cmd mode
+            nav_msg = FlightNav()
+            nav_msg.header.stamp = rospy.Time.now()
+            nav_msg.control_frame = nav_msg.WORLD_FRAME
+            nav_msg.target = nav_msg.COG
+            nav_msg.pos_xy_nav_mode = nav_msg.POS_VEL_MODE
+            relative_time = rospy.Time.now().to_sec() - self.__circle_start_time.to_sec()
+            nav_msg.target_pos_x = self.__circle_start_odom.pose.pose.position.x - self.__circle_raidus + self.__circle_raidus * math.cos(relative_time * self.__ang_vel + self.__circle_start_ang)
+            nav_msg.target_pos_y = self.__circle_start_odom.pose.pose.position.y + self.__circle_raidus * math.sin(relative_time * self.__ang_vel + self.__circle_start_ang)
+            nav_msg.target_vel_x = -math.sin(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
+            nav_msg.target_vel_y = math.cos(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
+            nav_msg.pos_z_nav_mode = nav_msg.POS_MODE
+            nav_msg.target_pos_z = self.__circle_start_odom.pose.pose.position.z
+            self.__mpc_target_nav_pub.publish(nav_msg)
 
     def getKey(self):
         tty.setraw(sys.stdin.fileno())
