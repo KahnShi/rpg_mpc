@@ -7,8 +7,11 @@ import tf
 
 from std_msgs.msg import Empty
 from std_msgs.msg import Bool
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Path
 from nav_msgs.msg import Odometry
 from aerial_robot_msgs.msg import FlightNav
+from aerial_robot_msgs.msg import MpcWaypointList
 
 import sys, select, termios, tty
 
@@ -18,6 +21,7 @@ Reading from the keyboard  and Publishing to Twist!
 0:             preset waypoint 0, keep still
 1:             preset waypoint 1, relative dist: (1.0, 1.0, 0.5)
 2:             preset waypoint 2, relative dist: (1.0, -1.0, 0.5)
+o:             circle motion
 s:             mpc control stops
 c:             mpc control continues
 q:             quit
@@ -33,25 +37,33 @@ class mpcTaskKeyboardInterface:
         print msg
 
         ## pub
-        self.__mpc_target_odom_pub = rospy.Publisher('/mpc/target_odom', Odometry, queue_size=1)
+        self.__mpc_target_waypoints_pub = rospy.Publisher('/mpc/target_waypoints', MpcWaypointList, queue_size=1)
         self.__mpc_target_nav_pub = rospy.Publisher('/uav/nav', FlightNav, queue_size=1)
         self.__mpc_stop_flag_pub = rospy.Publisher('/mpc/stop_cmd', Bool, queue_size=1)
+        self.__mpc_target_traj_pub = rospy.Publisher("/mpc/circle_traj", Path, queue_size=1);
 
         #sub
         self.__hydrus_odom = Odometry()
         self.__hydrus_cog_odom_sub = rospy.Subscriber('/uav/cog/odom', Odometry, self.__cogOdomCallback)
+
+        self.__circle_motion_flag = False
         time.sleep(0.5)
         rospy.Timer(rospy.Duration(0.01), self.__timerCallback)
+        rospy.Timer(rospy.Duration(0.01), self.__circleMotionCallback)
 
     def __cogOdomCallback(self, msg):
         self.__hydrus_odom = msg
 
     def __sendMpcTargetOdom(self, pos_offset, period):
-        mpc_target_odom = Odometry()
-        mpc_target_odom.header.stamp = rospy.Time.now() + rospy.Duration(period)
-        mpc_target_odom.pose.pose.position.x = self.__hydrus_odom.pose.pose.position.x + pos_offset[0]
-        mpc_target_odom.pose.pose.position.y = self.__hydrus_odom.pose.pose.position.y + pos_offset[1]
-        mpc_target_odom.pose.pose.position.z = self.__hydrus_odom.pose.pose.position.z + pos_offset[2]
+        mpc_waypoints = MpcWaypointList()
+        mpc_waypoints.mode = mpc_waypoints.FULL
+        mpc_waypoints.header.stamp = rospy.Time.now()
+
+        mpc_waypoints.list.append(Odometry())
+        mpc_waypoints.list[0].header.stamp = rospy.Time.now() + rospy.Duration(period)
+        mpc_waypoints.list[0].pose.pose.position.x = self.__hydrus_odom.pose.pose.position.x + pos_offset[0]
+        mpc_waypoints.list[0].pose.pose.position.y = self.__hydrus_odom.pose.pose.position.y + pos_offset[1]
+        mpc_waypoints.list[0].pose.pose.position.z = self.__hydrus_odom.pose.pose.position.z + pos_offset[2]
         current_quaternion = (
             self.__hydrus_odom.pose.pose.orientation.x,
             self.__hydrus_odom.pose.pose.orientation.y,
@@ -63,12 +75,60 @@ class mpcTaskKeyboardInterface:
         yaw = current_euler[2]
 
         target_quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw)
-        mpc_target_odom.pose.pose.orientation.x = target_quaternion[0]
-        mpc_target_odom.pose.pose.orientation.y = target_quaternion[1]
-        mpc_target_odom.pose.pose.orientation.z = target_quaternion[2]
-        mpc_target_odom.pose.pose.orientation.w = target_quaternion[3]
+        mpc_waypoints.list[0].pose.pose.orientation.x = target_quaternion[0]
+        mpc_waypoints.list[0].pose.pose.orientation.y = target_quaternion[1]
+        mpc_waypoints.list[0].pose.pose.orientation.z = target_quaternion[2]
+        mpc_waypoints.list[0].pose.pose.orientation.w = target_quaternion[3]
 
-        self.__mpc_target_odom_pub.publish(mpc_target_odom)
+        mpc_waypoints.list[0].twist.twist.linear.x = 0.0
+        mpc_waypoints.list[0].twist.twist.linear.y = 0.0
+        mpc_waypoints.list[0].twist.twist.linear.z = 0.0
+        mpc_waypoints.list[0].twist.twist.angular.x = 0.0
+        mpc_waypoints.list[0].twist.twist.angular.y = 0.0
+        mpc_waypoints.list[0].twist.twist.angular.z = 0.0
+
+        self.__mpc_target_waypoints_pub.publish(mpc_waypoints)
+
+    def __sendCircleCommand(self):
+        radius = 5.0
+        time_gap = 0.1
+        candidate = 21
+        ang_vel = 0.5 ## 0.3
+        mpc_waypoints = MpcWaypointList()
+        mpc_waypoints.mode = mpc_waypoints.FULL
+        mpc_waypoints.header.stamp = rospy.Time.now()
+
+        for i in range(0, candidate):
+            mpc_waypoints.list.append(Odometry())
+            mpc_waypoints.list[i].header.stamp = mpc_waypoints.header.stamp + rospy.Duration(time_gap * i)
+            relative_time = mpc_waypoints.list[i].header.stamp.to_sec() - self.__circle_start_time.to_sec()
+            mpc_waypoints.list[i].pose.pose.position.x = self.__circle_start_odom.pose.pose.position.x - radius + radius * math.cos(relative_time * ang_vel)
+            mpc_waypoints.list[i].pose.pose.position.y = self.__circle_start_odom.pose.pose.position.y + radius * math.sin(relative_time * ang_vel)
+            mpc_waypoints.list[i].pose.pose.position.z = self.__circle_start_odom.pose.pose.position.z
+            current_quaternion = (
+                self.__circle_start_odom.pose.pose.orientation.x,
+                self.__circle_start_odom.pose.pose.orientation.y,
+                self.__circle_start_odom.pose.pose.orientation.z,
+                self.__circle_start_odom.pose.pose.orientation.w)
+            current_euler = tf.transformations.euler_from_quaternion(current_quaternion)
+            roll = current_euler[0]
+            pitch = current_euler[1]
+            yaw = current_euler[2]
+
+            target_quaternion = tf.transformations.quaternion_from_euler(0, 0, yaw)
+            mpc_waypoints.list[i].pose.pose.orientation.x = target_quaternion[0]
+            mpc_waypoints.list[i].pose.pose.orientation.y = target_quaternion[1]
+            mpc_waypoints.list[i].pose.pose.orientation.z = target_quaternion[2]
+            mpc_waypoints.list[i].pose.pose.orientation.w = target_quaternion[3]
+
+            mpc_waypoints.list[i].twist.twist.linear.x = -math.sin(relative_time * ang_vel) * radius * ang_vel
+            mpc_waypoints.list[i].twist.twist.linear.y = math.cos(relative_time * ang_vel) * radius * ang_vel
+            mpc_waypoints.list[i].twist.twist.linear.z = 0.0
+            mpc_waypoints.list[i].twist.twist.angular.x = 0.0
+            mpc_waypoints.list[i].twist.twist.angular.y = 0.0
+            mpc_waypoints.list[i].twist.twist.angular.z = ang_vel
+
+        self.__mpc_target_waypoints_pub.publish(mpc_waypoints)
 
     def getKey(self):
         tty.setraw(sys.stdin.fileno())
@@ -76,6 +136,27 @@ class mpcTaskKeyboardInterface:
         key = sys.stdin.read(1)
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.__settings)
         return key
+
+    def __circleMotionCallback(self, event):
+        if self.__circle_motion_flag:
+            self.__sendCircleCommand()
+
+    def __publishMpcTargetCirclePath(self):
+        msg = Path()
+        msg.header.stamp = rospy.Time.now()
+        msg.header.frame_id = "/world"
+        radius = 5.0
+        num = 361
+        ang_gap = 2.0 * 3.14159 / (num - 1)
+        center = [self.__circle_start_odom.pose.pose.position.x - radius,
+                  self.__circle_start_odom.pose.pose.position.y, self.__circle_start_odom.pose.pose.position.z]
+        for i in range(0, num):
+            msg.poses.append(PoseStamped())
+            msg.poses[i].header = msg.header
+            msg.poses[i].pose.position.x = center[0] + math.cos(ang_gap * i) * radius
+            msg.poses[i].pose.position.y = center[1] + math.sin(ang_gap * i) * radius
+            msg.poses[i].pose.position.z = center[2]
+        self.__mpc_target_traj_pub.publish(msg)
 
     def __timerCallback(self, event):
 	key = self.getKey()
@@ -87,6 +168,15 @@ class mpcTaskKeyboardInterface:
             self.__sendMpcTargetOdom([1.0, 1.0, 0.5], 2.0)
 	if key == '2':
             self.__sendMpcTargetOdom([1.0, -1.0, 0.5], 2.0)
+	if key == 'o':
+            self.__circle_start_time = rospy.Time.now()
+            self.__circle_start_odom = self.__hydrus_odom
+            self.__circle_motion_flag = True
+            self.__publishMpcTargetCirclePath()
+            rospy.loginfo("Circle motion starts")
+        else:
+            self.__circle_motion_flag = False
+            rospy.loginfo("Circle motion stops")
 	if key == 's':
             print "Mpc control stops"
             msg = Bool()
