@@ -25,7 +25,7 @@ Q_pos_xy:     200   # Cost for horizontal positon error
 Q_pos_z:      500   # Cost for vertical position error
 Q_attitude:   50    # Cost for attitude error
 Q_velocity:   50    # Cost for velocity error
-Q_angvelocity:   10    # Cost for angular velocity error
+Q_angvelocity:   4    # Cost for angular velocity error
 
 # Cost on Inputs
 R_thrust:     1     # Cost on thrust input
@@ -36,8 +36,8 @@ state_cost_exponential: 0.0     # Scaling for state costs
 input_cost_exponential: 0.0     # scaling for input costs
 
 # Limits for inputs
-min_thrust:         2.0       # ~ 20% gravity [N]
-max_thrust:         20.0      # ~ 200% gravity [N]
+min_thrust:         2.0       # [N]
+max_thrust:         16.5      # [N]
 
 # Print information such as timing to terminal
 print_info:       true
