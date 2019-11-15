@@ -26,7 +26,7 @@
 
 #include <thread>
 
-#include <Eigen/Eigen>
+//#include <Eigen/Eigen> // already in "mpc_wrapper.h"
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PointStamped.h>
 #include <nav_msgs/Path.h>

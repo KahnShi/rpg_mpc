@@ -24,7 +24,16 @@
 
 #pragma once
 
-#include <Eigen/Eigen>
+/* Original: fail to compile in Upboard */
+// #include <Eigen/Eigen>
+
+/* new */
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/LU>
+#include <eigen3/Eigen/Geometry>
+#include <eigen3/Eigen/Eigenvalues>
+
 #include <ros/ros.h>
 
 namespace rpg_mpc {

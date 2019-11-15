@@ -27,7 +27,7 @@
 #include <ros/ros.h>
 #include <rpg_mpc/mpc_wrapper.h>
 
-#include "quadrotor_common/parameter_helper.h"
+// #include "quadrotor_common/parameter_helper.h"
 
 namespace rpg_mpc
 {
@@ -58,15 +58,47 @@ class MpcParams {
   {
   }
 
+  /* getParam() functions move from https://github.com/uzh-rpg/rpg_quadrotor_common/blob/master/quadrotor_common/include/quadrotor_common/parameter_helper.h */
+  bool getParam(const std::string& name, T& parameter,
+                const ros::NodeHandle& pnh = ros::NodeHandle("~"))
+  {
+    if (pnh.getParam(name, parameter))
+      {
+        ROS_INFO_STREAM(
+                        "[" << pnh.getNamespace() << "] " << name << " = " << parameter);
+        return true;
+      }
+    ROS_ERROR_STREAM(
+                     "[" << pnh.getNamespace() << "] Could not load parameter "
+                     << pnh.getNamespace() << "/"<< name);
+    return false;
+  }
+
+  bool getParam(const std::string& name, T& parameter, const T& defaultValue,
+                const ros::NodeHandle& pnh = ros::NodeHandle("~"))
+  {
+    if (pnh.getParam(name, parameter))
+      ROS_INFO_STREAM(
+                      "[" << pnh.getNamespace() << "] " << name << " = " << parameter);
+    else
+      {
+        parameter = defaultValue;
+        ROS_WARN_STREAM(
+                        "[" << pnh.getNamespace() << "] " << name << " = " << parameter
+                        << " set to default value");
+      }
+    return true;
+  }
+
   bool loadParameters(ros::NodeHandle& pnh)
   {
     // todo
     #define GET_PARAM(name)                            \
-    if (!quadrotor_common::getParam(#name, name, pnh)) \
+    if (!getParam(#name, name, pnh)) \
       return false
 
     #define GET_PARAM_(name) \
-    if (!quadrotor_common::getParam(#name, name ## _, pnh)) \
+    if (!getParam(#name, name ## _, pnh)) \
       return false
 
     // Read state costs.
@@ -76,7 +108,7 @@ class MpcParams {
     GET_PARAM(Q_attitude);
     GET_PARAM(Q_velocity);
     GET_PARAM(Q_angvelocity);
-    quadrotor_common::getParam("Q_perception", Q_perception, (T)0.0, pnh);
+    getParam("Q_perception", Q_perception, (T)0.0, pnh);
 
     // Check whether all state costs are positive.
     if(Q_pos_xy     <= 0.0 ||
@@ -113,9 +145,9 @@ class MpcParams {
       R_thrust, R_thrust, R_thrust, R_thrust).finished().asDiagonal();
 
     // Read cost scaling values
-    quadrotor_common::getParam("state_cost_exponential",
+    getParam("state_cost_exponential",
       state_cost_exponential_, (T)0.0, pnh);
-    quadrotor_common::getParam("input_cost_exponential",
+    getParam("input_cost_exponential",
       input_cost_exponential_, (T)0.0, pnh);
 
     // Read input limits.
@@ -151,7 +183,8 @@ class MpcParams {
     //   q_B_C_ = Eigen::Quaternion<T>(q_B_C[0], q_B_C[1], q_B_C[2], q_B_C[3]);
     // }
 
-    quadrotor_common::getParam("print_info", print_info_, false, pnh);
+    // getParam("print_info", print_info_, false, pnh);
+    pnh.getParam("print_info", print_info_);
     if(print_info_) ROS_INFO("MPC: Informative printing enabled.");
 
     changed_ = true;

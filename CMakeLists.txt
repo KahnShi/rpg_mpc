@@ -74,11 +74,11 @@ cs_add_library(mpc_wrapper
 target_link_libraries(mpc_wrapper
   mpc_solver)
 
-cs_add_library(mpc_controller
-  src/mpc_controller.cpp)
+# cs_add_library(mpc_controller
+#   src/mpc_controller.cpp)
 
-target_link_libraries(mpc_controller 
-  mpc_wrapper)
+# target_link_libraries(mpc_controller 
+#   mpc_wrapper)
 
 cs_add_library(mpc_hydrus_controller
   src/mpc_hydrus_controller.cpp)
@@ -90,12 +90,12 @@ target_link_libraries(mpc_hydrus_controller
 cs_install()
 cs_export()
 
-cs_add_executable(mpc_controller_node
-  test/mpc_node.cpp)
-target_link_libraries(mpc_controller_node
-  mpc_controller
-  mpc_wrapper
-  mpc_solver)
+# cs_add_executable(mpc_controller_node
+#   test/mpc_node.cpp)
+# target_link_libraries(mpc_controller_node
+#   mpc_controller
+#   mpc_wrapper
+#   mpc_solver)
 
 cs_add_executable(mpc_hydrus_controller_node
   test/mpc_hydrus_node.cpp)
@@ -104,17 +104,17 @@ target_link_libraries(mpc_hydrus_controller_node
   mpc_wrapper
   mpc_solver)
 
-if(catkin_LIBRARIES MATCHES "autopilot")
+# if(catkin_LIBRARIES MATCHES "autopilot")
 
-  message("Building with MPC Autopilot")
-  cs_add_executable(autopilot_mpc_instance
-    src/autopilot_mpc_instance.cpp)
-  target_link_libraries(autopilot_mpc_instance
-    mpc_controller
-    mpc_wrapper
-    mpc_solver)
+#   message("Building with MPC Autopilot")
+#   cs_add_executable(autopilot_mpc_instance
+#     src/autopilot_mpc_instance.cpp)
+#   target_link_libraries(autopilot_mpc_instance
+#     mpc_controller
+#     mpc_wrapper
+#     mpc_solver)
 
-endif(catkin_LIBRARIES MATCHES "autopilot")
+# endif(catkin_LIBRARIES MATCHES "autopilot")
 
 cs_install()
 
