@@ -52,11 +52,11 @@ class mpcTaskKeyboardInterface:
         self.__circle_mpc_mode = True ## otherwise: flight_nav pos_vel cmd mode
 
         ## simulation test
-        self.__circle_raidus = 5.0
+        self.__circle_radius = 5.0
         self.__ang_vel = 0.05 ## 0.3
         self.__ang_vel_change_unit = 0.05
         ## 326 test
-        # self.__circle_raidus = 1.2
+        # self.__circle_radius = 1.2
         # self.__ang_vel = 0.2
         # self.__ang_vel_change_unit = 0.1
 
@@ -114,8 +114,8 @@ class mpcTaskKeyboardInterface:
                 mpc_waypoints.list.append(Odometry())
                 mpc_waypoints.list[i].header.stamp = mpc_waypoints.header.stamp + rospy.Duration(time_gap * i)
                 relative_time = mpc_waypoints.list[i].header.stamp.to_sec() - self.__circle_start_time.to_sec()
-                mpc_waypoints.list[i].pose.pose.position.x = self.__circle_start_odom.pose.pose.position.x - self.__circle_raidus + self.__circle_raidus * math.cos(relative_time * self.__ang_vel + self.__circle_start_ang)
-                mpc_waypoints.list[i].pose.pose.position.y = self.__circle_start_odom.pose.pose.position.y + self.__circle_raidus * math.sin(relative_time * self.__ang_vel + self.__circle_start_ang)
+                mpc_waypoints.list[i].pose.pose.position.x = self.__circle_start_odom.pose.pose.position.x - self.__circle_radius + self.__circle_radius * math.cos(relative_time * self.__ang_vel + self.__circle_start_ang)
+                mpc_waypoints.list[i].pose.pose.position.y = self.__circle_start_odom.pose.pose.position.y + self.__circle_radius * math.sin(relative_time * self.__ang_vel + self.__circle_start_ang)
                 mpc_waypoints.list[i].pose.pose.position.z = self.__circle_start_odom.pose.pose.position.z
                 current_quaternion = (
                     self.__circle_start_odom.pose.pose.orientation.x,
@@ -133,8 +133,8 @@ class mpcTaskKeyboardInterface:
                 mpc_waypoints.list[i].pose.pose.orientation.z = target_quaternion[2]
                 mpc_waypoints.list[i].pose.pose.orientation.w = target_quaternion[3]
 
-                mpc_waypoints.list[i].twist.twist.linear.x = -math.sin(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
-                mpc_waypoints.list[i].twist.twist.linear.y = math.cos(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
+                mpc_waypoints.list[i].twist.twist.linear.x = -math.sin(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_radius * self.__ang_vel
+                mpc_waypoints.list[i].twist.twist.linear.y = math.cos(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_radius * self.__ang_vel
                 mpc_waypoints.list[i].twist.twist.linear.z = 0.0
                 mpc_waypoints.list[i].twist.twist.angular.x = 0.0
                 mpc_waypoints.list[i].twist.twist.angular.y = 0.0
@@ -149,10 +149,10 @@ class mpcTaskKeyboardInterface:
             nav_msg.target = nav_msg.COG
             nav_msg.pos_xy_nav_mode = nav_msg.POS_VEL_MODE
             relative_time = rospy.Time.now().to_sec() - self.__circle_start_time.to_sec()
-            nav_msg.target_pos_x = self.__circle_start_odom.pose.pose.position.x - self.__circle_raidus + self.__circle_raidus * math.cos(relative_time * self.__ang_vel + self.__circle_start_ang)
-            nav_msg.target_pos_y = self.__circle_start_odom.pose.pose.position.y + self.__circle_raidus * math.sin(relative_time * self.__ang_vel + self.__circle_start_ang)
-            nav_msg.target_vel_x = -math.sin(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
-            nav_msg.target_vel_y = math.cos(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_raidus * self.__ang_vel
+            nav_msg.target_pos_x = self.__circle_start_odom.pose.pose.position.x - self.__circle_radius + self.__circle_radius * math.cos(relative_time * self.__ang_vel + self.__circle_start_ang)
+            nav_msg.target_pos_y = self.__circle_start_odom.pose.pose.position.y + self.__circle_radius * math.sin(relative_time * self.__ang_vel + self.__circle_start_ang)
+            nav_msg.target_vel_x = -math.sin(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_radius * self.__ang_vel
+            nav_msg.target_vel_y = math.cos(relative_time * self.__ang_vel + self.__circle_start_ang) * self.__circle_radius * self.__ang_vel
             nav_msg.pos_z_nav_mode = nav_msg.POS_MODE
             nav_msg.target_pos_z = self.__circle_start_odom.pose.pose.position.z
             self.__mpc_target_nav_pub.publish(nav_msg)
@@ -174,13 +174,13 @@ class mpcTaskKeyboardInterface:
         msg.header.frame_id = "/world"
         num = 361
         ang_gap = 2.0 * 3.14159 / (num - 1)
-        center = [self.__circle_start_odom.pose.pose.position.x - self.__circle_raidus,
+        center = [self.__circle_start_odom.pose.pose.position.x - self.__circle_radius,
                   self.__circle_start_odom.pose.pose.position.y, self.__circle_start_odom.pose.pose.position.z]
         for i in range(0, num):
             msg.poses.append(PoseStamped())
             msg.poses[i].header = msg.header
-            msg.poses[i].pose.position.x = center[0] + math.cos(ang_gap * i) * self.__circle_raidus
-            msg.poses[i].pose.position.y = center[1] + math.sin(ang_gap * i) * self.__circle_raidus
+            msg.poses[i].pose.position.x = center[0] + math.cos(ang_gap * i) * self.__circle_radius
+            msg.poses[i].pose.position.y = center[1] + math.sin(ang_gap * i) * self.__circle_radius
             msg.poses[i].pose.position.z = center[2]
         self.__mpc_target_traj_pub.publish(msg)
 
@@ -205,12 +205,12 @@ class mpcTaskKeyboardInterface:
             self.__circle_start_ang = (rospy.Time.now().to_sec() - self.__circle_start_time.to_sec()) * self.__ang_vel + self.__circle_start_ang
             self.__ang_vel -= self.__ang_vel_change_unit
             self.__circle_start_time = rospy.Time.now()
-            rospy.loginfo("Current vel decrease to: %f", self.__ang_vel * self.__circle_raidus)
+            rospy.loginfo("Current vel decrease to: %f", self.__ang_vel * self.__circle_radius)
 	elif key == 'l':
             self.__circle_start_ang = (rospy.Time.now().to_sec() - self.__circle_start_time.to_sec()) * self.__ang_vel + self.__circle_start_ang
             self.__ang_vel += self.__ang_vel_change_unit
             self.__circle_start_time = rospy.Time.now()
-            rospy.loginfo("Current vel increase to: %f", self.__ang_vel * self.__circle_raidus)
+            rospy.loginfo("Current vel increase to: %f", self.__ang_vel * self.__circle_radius)
         else:
             self.__circle_motion_flag = False
             rospy.loginfo("Circle motion stops")
