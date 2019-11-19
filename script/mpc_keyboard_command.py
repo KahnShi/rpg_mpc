@@ -24,6 +24,7 @@ Reading from the keyboard  and Publishing to Twist!
 o:             circle motion
 l:             circle speed increase
 k:             circle speed decrease
+p:             circle motion stops
 s:             mpc control stops
 c:             mpc control continues
 q:             quit
@@ -211,7 +212,7 @@ class mpcTaskKeyboardInterface:
             self.__ang_vel += self.__ang_vel_change_unit
             self.__circle_start_time = rospy.Time.now()
             rospy.loginfo("Current vel increase to: %f", self.__ang_vel * self.__circle_radius)
-        else:
+        elif key == 'p':
             self.__circle_motion_flag = False
             rospy.loginfo("Circle motion stops")
 	if key == 's':
