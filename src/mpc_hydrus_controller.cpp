@@ -258,8 +258,8 @@ bool MpcHydrusController<T>::setReference()
     else{
       for(int i=0; i<kSamples+1; i++){
         Eigen::Matrix<T, kInputSize, 1> target_input;
-        for (int i = 0; i < kInputSize; ++i)
-          target_input(i) = mpc_cmd_.list[cmd_id].target.input[i];
+        for (int j = 0; j < kInputSize; ++j)
+          target_input(j) = mpc_cmd_.list[cmd_id].target.input[j];
         reference_inputs_.col(i) = target_input;
       }
     }
