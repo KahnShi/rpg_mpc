@@ -119,6 +119,15 @@ void MpcHydrusController<T>::updateMpc()
   mpc_wrapper_.getStates(predicted_states_);
   mpc_wrapper_.getInputs(predicted_inputs_);
 
+  // normalize quaternion in predicted states
+  for (int i = 0; i < kSamples+1; ++i){
+    normalizeStateQuaternion(predicted_states_.col(i));
+    if(predicted_states_.col(i).segment(kOriW,4).dot(
+     est_state_.segment(kOriW,4))<0.0)
+      predicted_states_.block(kOriW,i,4,1) =
+        -predicted_states_.block(kOriW,i,4,1);
+  }
+
   if (mpc_data_state_ == PREVIOUS_DATA_UNREADY)
     mpc_data_state_ = PREVIOUS_DATA_READY;
 
@@ -177,7 +186,9 @@ bool MpcHydrusController<T>::setStateEstimate()
   est_state_(kRateX) = cog_odom_.twist.twist.angular.x;
   est_state_(kRateY) = cog_odom_.twist.twist.angular.y;
   est_state_(kRateZ) = cog_odom_.twist.twist.angular.z;
-  const bool quaternion_norm_ok = abs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
+
+  normalizeStateQuaternion(est_state_);
+  const bool quaternion_norm_ok = fabs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
   return quaternion_norm_ok;
 }
 
@@ -248,7 +259,7 @@ bool MpcHydrusController<T>::setReference()
         est_state_.segment(kOriW,4))<0.0)
           reference_states_.block(kOriW,i,4,1) =
             -reference_states_.block(kOriW,i,4,1);
-      // quaternion_norm_ok &= abs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
+      // quaternion_norm_ok &= fabs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
     }
     if (mpc_data_state_ == PREVIOUS_DATA_READY){
       reference_inputs_.block(0, 0, kInputSize, kSamples) = predicted_inputs_;
@@ -387,6 +398,18 @@ void MpcHydrusController<T>::preparationThread()
   const clock_t end = clock();
   timing_preparation_ = 0.9*timing_preparation_ +
                         0.1* double(end - start)/CLOCKS_PER_SEC;
+}
+
+template <typename T>
+void MpcHydrusController<T>::normalizeStateQuaternion(Eigen::Ref<Eigen::Matrix<T, kStateSize, 1>> state)
+{
+  double quaternion_norm = fabs(state.segment(kOriW, 4).norm());
+  if (quaternion_norm < 0.0001){
+    quaternion_norm = 0.0001; // todo
+    ROS_ERROR("quaternion error:");
+    std::cout << "quaternion norm: " << quaternion_norm << ": " << state.segment(kOriW, 4).transpose() << "\n";
+  }
+  state.segment(kOriW,4) /= quaternion_norm;
 }
 
 template <typename T>

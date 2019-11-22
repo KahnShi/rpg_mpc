@@ -99,6 +99,8 @@ class MpcHydrusController {
   void updateMpc();
   void updateRobotModel();
 
+  void normalizeStateQuaternion(Eigen::Ref<Eigen::Matrix<T, kStateSize, 1>> state);
+
   void updateControlCommand(
     const Eigen::Ref<const Eigen::Matrix<T, kStateSize, 1>> state,
     const Eigen::Ref<const Eigen::Matrix<T, kInputSize, 1>> input,
