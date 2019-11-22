@@ -227,7 +227,8 @@ bool MpcHydrusController<T>::setReference()
     }
     double period = (mpc_cmd_.list.front().end_stamp - mpc_cmd_.list.front().start_stamp).toSec(); // might be negative
     int end_state_id = std::round(period / dt);
-    mpc_wrapper_.setCosts(end_state_id, 0.0, 0.0);
+    // mpc_wrapper_.setCosts(end_state_id, 0.0, 0.0);
+    mpc_wrapper_.setCosts(end_state_id, 1.0, 1.0);
   }
   else // todo
   {
@@ -262,7 +263,6 @@ bool MpcHydrusController<T>::setReference()
         reference_inputs_.col(i) = target_input;
       }
     }
-    // test
     // mpc_wrapper_.setCosts(kSamples, 0.0, 0.0);
     mpc_wrapper_.setCosts(kSamples, 1.0, 1.0);
   }
