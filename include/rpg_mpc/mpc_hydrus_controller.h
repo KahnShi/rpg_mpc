@@ -153,6 +153,7 @@ class MpcHydrusController {
 
   Eigen::Matrix<T, kStateSize, 1> end_state_;
   int mpc_data_state_;
+  bool mpc_data_reuse_flag_;
 };
 
 

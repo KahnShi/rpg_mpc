@@ -67,6 +67,7 @@ MpcHydrusController<T>::MpcHydrusController(
   setNewParams(params_);
 
   mpc_data_state_ = PREVIOUS_DATA_UNREADY;
+  mpc_data_reuse_flag_ = false;
 
   preparation_thread_ = std::thread(&MpcWrapper<T>::prepare, mpc_wrapper_);
 }
@@ -214,7 +215,8 @@ bool MpcHydrusController<T>::setReference()
       end_state.block(kOriW,0,4,1) =
         -end_state.block(kOriW,0,4,1);
     updateEndState(end_state);
-    if (mpc_data_state_ != PREVIOUS_DATA_READY){
+    if (mpc_data_state_ != PREVIOUS_DATA_READY || (!mpc_data_reuse_flag_))
+      {
       reference_states_ = end_state.replicate(1, kSamples+1);
       reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
                            mpc_cmd_.list.front().target.input[0],
