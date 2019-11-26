@@ -169,21 +169,27 @@ bool MpcWrapper<T>::setCosts(
   // float state_N_scale{100.0};
   for(int i=0; i<kSamples; i++)
   {
-    if (i < end_state_id){
-      state_scale = exp(float(i)/float(end_state_id)
-                        * float(state_cost_scaling));
-      input_scale = exp(float(i)/float(end_state_id)
-                        * float(input_cost_scaling));
-    }
-    else if (i == end_state_id){
-      // state_scale = 100.0; // large gain when in end time
-      state_scale = 1.0; // large gain when in end time
-      input_scale = 1.0;
-    }
-    else{
-      state_scale = 1.0;
-      input_scale = 1.0;
-    }
+    /* method 1: more weights on start states */
+    state_scale = exp(- float(i)/float(kSamples)
+      * float(state_cost_scaling));
+    input_scale = exp(- float(i)/float(kSamples)
+      * float(input_cost_scaling));
+    /* method 2: more weights on end states */
+    // if (i < end_state_id){
+    //   state_scale = exp(float(i)/float(end_state_id)
+    //                     * float(state_cost_scaling));
+    //   input_scale = exp(float(i)/float(end_state_id)
+    //                     * float(input_cost_scaling));
+    // }
+    // else if (i == end_state_id){
+    //   // state_scale = 100.0; // large gain when in end time
+    //   state_scale = 1.0; // large gain when in end time
+    //   input_scale = 1.0;
+    // }
+    // else{
+    //   state_scale = 1.0;
+    //   input_scale = 1.0;
+    // }
     acado_W_.block(0, i*kRefSize, kCostSize, kCostSize) =
       W_.block(0, 0, kCostSize, kCostSize).template cast<float>()
       * state_scale;
