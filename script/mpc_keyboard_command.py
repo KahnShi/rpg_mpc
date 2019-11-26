@@ -48,6 +48,7 @@ class mpcTaskKeyboardInterface:
         #sub
         self.__hydrus_odom = Odometry()
         self.__hydrus_cog_odom_sub = rospy.Subscriber('/uav/cog/odom', Odometry, self.__cogOdomCallback)
+        self.__mpc_horizon = 1.0
 
         self.__circle_motion_flag = False
         self.__circle_mpc_mode = True ## otherwise: flight_nav pos_vel cmd mode
@@ -105,8 +106,8 @@ class mpcTaskKeyboardInterface:
 
     def __sendCircleCommand(self):
         if self.__circle_mpc_mode:
-            time_gap = 0.1
             candidate = 21
+            time_gap = self.__mpc_horizon / (candidate - 1.0)
             mpc_waypoints = MpcWaypointList()
             mpc_waypoints.mode = mpc_waypoints.FULL
             mpc_waypoints.header.stamp = rospy.Time.now()
@@ -190,11 +191,11 @@ class mpcTaskKeyboardInterface:
 	print "the key value is %d" % ord(key)
 	# takeoff and landing
 	if key == '0':
-            self.__sendMpcTargetOdom([0.0, 0.0, 0.0], 2.0)
+            self.__sendMpcTargetOdom([0.0, 0.0, 0.0], self.__mpc_horizon)
 	if key == '1':
-            self.__sendMpcTargetOdom([1.0, 1.0, 0.5], 2.0)
+            self.__sendMpcTargetOdom([1.0, 1.0, 0.5], self.__mpc_horizon)
 	if key == '2':
-            self.__sendMpcTargetOdom([1.0, -1.0, 0.5], 2.0)
+            self.__sendMpcTargetOdom([1.0, -1.0, 0.5], self.__mpc_horizon)
 	if key == 'o':
             self.__circle_start_time = rospy.Time.now()
             self.__circle_start_ang = 0.0

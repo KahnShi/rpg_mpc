@@ -150,7 +150,8 @@ class MpcWrapper
     W_.block(0, 0, kEndRefSize, kEndRefSize);
 
   bool acado_is_prepared_{false};
-  const T dt_{0.1};
+  // const T dt_{0.1};
+  const T dt_{0.05};
   const Eigen::Matrix<real_t, kInputSize, 1> kHoverInput_ =
     (Eigen::Matrix<real_t, kInputSize, 1>() << 9.81 / 4.0, 9.81 / 4.0, 9.81 / 4.0, 9.81 / 4.0).finished();
 };
