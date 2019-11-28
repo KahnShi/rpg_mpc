@@ -93,6 +93,7 @@ class MpcHydrusController {
 
   void mpcCommandCallback(const aerial_robot_msgs::MpcCommandList::ConstPtr& msg);
   void cogOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);
+  void baselinkOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);
   void mpcCostGainCallback(const aerial_robot_msgs::MpcCostGain::ConstPtr& msg);
   bool setStateEstimate();
   bool setReference();
@@ -124,6 +125,7 @@ class MpcHydrusController {
   // Subscribers and publisher.
   ros::Subscriber sub_mpc_command_;
   ros::Subscriber sub_cog_odom_;
+  ros::Subscriber sub_baselink_odom_;
   ros::Subscriber sub_mpc_cost_gain_;
   ros::Publisher pub_predicted_trajectory_;
   ros::Publisher pub_reference_point_markers_;
@@ -141,6 +143,7 @@ class MpcHydrusController {
   // hydrus interface
   aerial_robot_msgs::MpcCommandList mpc_cmd_;
   nav_msgs::Odometry cog_odom_;
+  nav_msgs::Odometry baselink_odom_;
 
   // Variables
   T timing_feedback_, timing_preparation_;

@@ -55,6 +55,8 @@ MpcHydrusController<T>::MpcHydrusController(
                                    &MpcHydrusController<T>::mpcCommandCallback, this);
   sub_cog_odom_ = nh_.subscribe("/uav/cog/odom", 1,
                                    &MpcHydrusController<T>::cogOdomCallback, this);
+  sub_baselink_odom_ = nh_.subscribe("/uav/baselink/odom", 1,
+                                   &MpcHydrusController<T>::baselinkOdomCallback, this);
   sub_mpc_cost_gain_ = nh_.subscribe("/mpc/cost_gain", 1,
                                    &MpcHydrusController<T>::mpcCostGainCallback, this);
 
@@ -82,6 +84,11 @@ void MpcHydrusController<T>::mpcCommandCallback(const aerial_robot_msgs::MpcComm
 template <typename T>
 void MpcHydrusController<T>::cogOdomCallback(const nav_msgs::Odometry::ConstPtr& msg){
   cog_odom_ = *msg;
+}
+
+template <typename T>
+void MpcHydrusController<T>::baselinkOdomCallback(const nav_msgs::Odometry::ConstPtr& msg){
+  baselink_odom_ = *msg;
 }
 
 template <typename T>
@@ -177,10 +184,14 @@ bool MpcHydrusController<T>::setStateEstimate()
   est_state_(kPosX) = cog_odom_.pose.pose.position.x;
   est_state_(kPosY) = cog_odom_.pose.pose.position.y;
   est_state_(kPosZ) = cog_odom_.pose.pose.position.z;
-  est_state_(kOriW) = cog_odom_.pose.pose.orientation.w;
-  est_state_(kOriX) = cog_odom_.pose.pose.orientation.x;
-  est_state_(kOriY) = cog_odom_.pose.pose.orientation.y;
-  est_state_(kOriZ) = cog_odom_.pose.pose.orientation.z;
+  // est_state_(kOriW) = cog_odom_.pose.pose.orientation.w;
+  // est_state_(kOriX) = cog_odom_.pose.pose.orientation.x;
+  // est_state_(kOriY) = cog_odom_.pose.pose.orientation.y;
+  // est_state_(kOriZ) = cog_odom_.pose.pose.orientation.z;
+  est_state_(kOriW) = baselink_odom_.pose.pose.orientation.w;
+  est_state_(kOriX) = baselink_odom_.pose.pose.orientation.x;
+  est_state_(kOriY) = baselink_odom_.pose.pose.orientation.y;
+  est_state_(kOriZ) = baselink_odom_.pose.pose.orientation.z;
   est_state_(kVelX) = cog_odom_.twist.twist.linear.x;
   est_state_(kVelY) = cog_odom_.twist.twist.linear.y;
   est_state_(kVelZ) = cog_odom_.twist.twist.linear.z;
