@@ -36,14 +36,16 @@ MpcHydrusController<T>::MpcHydrusController(
   mpc_wrapper_(MpcWrapper<T>()),
   timing_feedback_(T(1e-3)),
   timing_preparation_(T(1e-3)),
-  est_state_((Eigen::Matrix<T, kStateSize, 1>() <<
-    0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0).finished()),
   reference_states_(Eigen::Matrix<T, kStateSize, kSamples+1>::Zero()),
   reference_inputs_(Eigen::Matrix<T, kInputSize, kSamples+1>::Zero()),
   predicted_states_(Eigen::Matrix<T, kStateSize, kSamples+1>::Zero()),
   predicted_inputs_(Eigen::Matrix<T, kInputSize, kSamples>::Zero()),
   point_of_interest_(Eigen::Matrix<T, 3, 1>::Zero())
 {
+  est_state_ = Eigen::Matrix<T, kStateSize, 1>();
+  for (int i = 0; i < kStateSize; ++i)
+    est_state_(i) = 0.0;
+  est_state_(kOriW) = 1.0;
   pub_predicted_trajectory_ =
     nh_.advertise<nav_msgs::Path>("/mpc/trajectory_predicted", 1);
   pub_reference_point_markers_ =
@@ -345,7 +347,7 @@ bool MpcHydrusController<T>::publishPrediction(
   states_msg.time_step = dt;
   states_msg.predict.resize(states_msg.num);
   for (int i = 0; i < states_msg.num; ++i){
-    for (int j = 0; j < 13; ++j)
+    for (int j = 0; j < kStateSize; ++j)
       states_msg.predict[i].state[j] = states(j, i);
     if (i < states_msg.num - 1){
       Eigen::Quaternion<T> q_orien(states_msg.predict[i].state[kOriW],
