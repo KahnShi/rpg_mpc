@@ -55,7 +55,7 @@ class mpcTaskKeyboardInterface:
 
         ## simulation test
         self.__circle_radius = 5.0
-        self.__ang_vel = 0.05 ## 0.3
+        self.__ang_vel = 0.0
         self.__ang_vel_change_unit = 0.05
         ## 326 test
         # self.__circle_radius = 1.2
@@ -215,6 +215,7 @@ class mpcTaskKeyboardInterface:
             rospy.loginfo("Current vel increase to: %f", self.__ang_vel * self.__circle_radius)
         elif key == 'p':
             self.__circle_motion_flag = False
+            self.__ang_vel = 0.0
             rospy.loginfo("Circle motion stops")
 	if key == 's':
             print "Mpc control stops"
