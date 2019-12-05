@@ -58,8 +58,8 @@ class mpcTaskKeyboardInterface:
         self.__ang_vel = 0.0
         self.__ang_vel_change_unit = 0.05
         ## 326 test
-        # self.__circle_radius = 1.2
-        # self.__ang_vel = 0.2
+        # self.__circle_radius = 1.0
+        # self.__ang_vel = 0.0
         # self.__ang_vel_change_unit = 0.1
 
         time.sleep(0.5)
@@ -69,16 +69,21 @@ class mpcTaskKeyboardInterface:
     def __cogOdomCallback(self, msg):
         self.__hydrus_odom = msg
 
-    def __sendMpcTargetOdom(self, pos_offset, period):
+    def __sendMpcTargetOdomFromOffset(self, pos_offset, period):
+        self.__sendMpcTargetOdom([pos_offset[0] + self.__hydrus_odom.pose.pose.position.x,
+                                  pos_offset[1] + self.__hydrus_odom.pose.pose.position.y,
+                                  pos_offset[2] + self.__hydrus_odom.pose.pose.position.z], period)
+
+    def __sendMpcTargetOdom(self, pos, period):
         mpc_waypoints = MpcWaypointList()
         mpc_waypoints.mode = mpc_waypoints.FULL
         mpc_waypoints.header.stamp = rospy.Time.now()
 
         mpc_waypoints.list.append(Odometry())
         mpc_waypoints.list[0].header.stamp = rospy.Time.now() + rospy.Duration(period)
-        mpc_waypoints.list[0].pose.pose.position.x = self.__hydrus_odom.pose.pose.position.x + pos_offset[0]
-        mpc_waypoints.list[0].pose.pose.position.y = self.__hydrus_odom.pose.pose.position.y + pos_offset[1]
-        mpc_waypoints.list[0].pose.pose.position.z = self.__hydrus_odom.pose.pose.position.z + pos_offset[2]
+        mpc_waypoints.list[0].pose.pose.position.x = pos[0]
+        mpc_waypoints.list[0].pose.pose.position.y = pos[1]
+        mpc_waypoints.list[0].pose.pose.position.z = pos[2]
         current_quaternion = (
             self.__hydrus_odom.pose.pose.orientation.x,
             self.__hydrus_odom.pose.pose.orientation.y,
@@ -191,11 +196,11 @@ class mpcTaskKeyboardInterface:
 	print "the key value is %d" % ord(key)
 	# takeoff and landing
 	if key == '0':
-            self.__sendMpcTargetOdom([0.0, 0.0, 0.0], self.__mpc_horizon)
+            self.__sendMpcTargetOdomFromOffset([0.0, 0.0, 0.0], self.__mpc_horizon)
 	if key == '1':
-            self.__sendMpcTargetOdom([1.0, 1.0, 0.5], self.__mpc_horizon)
+            self.__sendMpcTargetOdomFromOffset([0.5, 0.5, 0.3], self.__mpc_horizon)
 	if key == '2':
-            self.__sendMpcTargetOdom([1.0, -1.0, 0.5], self.__mpc_horizon)
+            self.__sendMpcTargetOdomFromOffset([0.5, -0.5, 0.3], self.__mpc_horizon)
 	if key == 'o':
             self.__circle_start_time = rospy.Time.now()
             self.__circle_start_ang = 0.0
@@ -215,6 +220,11 @@ class mpcTaskKeyboardInterface:
             rospy.loginfo("Current vel increase to: %f", self.__ang_vel * self.__circle_radius)
         elif key == 'p':
             self.__circle_motion_flag = False
+            ## only arrive the middle waypoint of original trajectory: self.__mpc_horizon / 2.0
+            relative_time = rospy.Time.now().to_sec() + self.__mpc_horizon / 2.0 - self.__circle_start_time.to_sec()
+            target_x = self.__circle_start_odom.pose.pose.position.x - self.__circle_radius + self.__circle_radius * math.cos(relative_time * self.__ang_vel + self.__circle_start_ang)
+            target_y = self.__circle_start_odom.pose.pose.position.y + self.__circle_radius * math.sin(relative_time * self.__ang_vel + self.__circle_start_ang)
+            self.__sendMpcTargetOdom([target_x, target_y, self.__circle_start_odom.pose.pose.position.z], self.__mpc_horizon)
             self.__ang_vel = 0.0
             rospy.loginfo("Circle motion stops")
 	if key == 's':
