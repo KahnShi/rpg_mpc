@@ -277,7 +277,7 @@ bool MpcHydrusController<T>::setReference()
             -reference_states_.block(kOriW,i,4,1);
       // quaternion_norm_ok &= fabs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
     }
-    if (mpc_data_state_ == PREVIOUS_DATA_READY){
+    if (mpc_data_state_ == PREVIOUS_DATA_READY && mpc_data_reuse_flag_){
       reference_inputs_.block(0, 0, kInputSize, kSamples) = predicted_inputs_;
       for (int j = 0; j < kInputSize; ++j)
         reference_inputs_(j, kSamples) = predicted_inputs_(j, kSamples - 1);
