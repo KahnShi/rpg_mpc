@@ -259,9 +259,10 @@ bool MpcHydrusController<T>::setReference()
   else // todo
   {
     int cmd_id = 0;
+    double current_time = ros::Time::now().toSec();
     for(int i=0; i<kSamples+1; i++)
     {
-      while(mpc_cmd_.list[cmd_id].end_stamp.toSec() - mpc_cmd_.list[cmd_id].start_stamp.toSec() < i*dt &&
+      while(mpc_cmd_.list[cmd_id].end_stamp.toSec() - current_time < i*dt &&
             cmd_id != mpc_cmd_.list.size() - 1)
       {
         cmd_id++;
