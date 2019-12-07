@@ -227,7 +227,6 @@ bool MpcHydrusController<T>::setReference()
      est_state_.segment(kOriW,4))<0.0)
       end_state.block(kOriW,0,4,1) =
         -end_state.block(kOriW,0,4,1);
-    updateEndState(end_state);
     if (mpc_data_state_ != PREVIOUS_DATA_READY || (!mpc_data_reuse_flag_))
       {
       reference_states_ = end_state.replicate(1, kSamples+1);
@@ -437,21 +436,6 @@ bool MpcHydrusController<T>::setNewParams(MpcParams<T>& params)
   // mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);
   params.changed_ = false;
   return true;
-}
-
-template <typename T>
-void MpcHydrusController<T>::updateEndState(Eigen::Matrix<T, kStateSize, 1> & end_state){
-  bool state_change = false;
-  for (int i = 0; i < kStateSize; ++i){
-    if (end_state_(i) != end_state(i)){
-      state_change = true;
-      break;
-    }
-  }
-  // if (mpc_data_state_ == PREVIOUS_DATA_READY && end_state_ != end_state)
-  if (mpc_data_state_ == PREVIOUS_DATA_READY && state_change)
-    mpc_data_state_ = PREVIOUS_DATA_UNREADY;
-  end_state_ = end_state;
 }
 
 

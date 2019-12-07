@@ -116,8 +116,6 @@ class MpcHydrusController {
 
   bool setNewParams(MpcParams<T>& params);
 
-  void updateEndState(Eigen::Matrix<T, kStateSize, 1> & end_state);
-
   // Handles
   ros::NodeHandle nh_;
   ros::NodeHandle pnh_;
