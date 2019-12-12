@@ -197,9 +197,12 @@ bool MpcHydrusController<T>::setStateEstimate()
   est_state_(kVelX) = cog_odom_.twist.twist.linear.x;
   est_state_(kVelY) = cog_odom_.twist.twist.linear.y;
   est_state_(kVelZ) = cog_odom_.twist.twist.linear.z;
-  est_state_(kRateX) = cog_odom_.twist.twist.angular.x;
-  est_state_(kRateY) = cog_odom_.twist.twist.angular.y;
-  est_state_(kRateZ) = cog_odom_.twist.twist.angular.z;
+  // est_state_(kRateX) = cog_odom_.twist.twist.angular.x;
+  // est_state_(kRateY) = cog_odom_.twist.twist.angular.y;
+  // est_state_(kRateZ) = cog_odom_.twist.twist.angular.z;
+  est_state_(kRateX) = baselink_odom_.twist.twist.angular.x;
+  est_state_(kRateY) = baselink_odom_.twist.twist.angular.y;
+  est_state_(kRateZ) = baselink_odom_.twist.twist.angular.z;
 
   normalizeStateQuaternion(est_state_);
   const bool quaternion_norm_ok = fabs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
