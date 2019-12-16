@@ -242,17 +242,7 @@ bool MpcHydrusController<T>::setReference()
      est_state_.segment(kOriW,4))<0.0)
       end_state.block(kOriW,0,4,1) =
         -end_state.block(kOriW,0,4,1);
-    if (mpc_data_state_ != PREVIOUS_DATA_READY || (!mpc_data_reuse_flag_))
-      {
-      reference_states_ = end_state.replicate(1, kSamples+1);
-      reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-                           mpc_cmd_.list.front().target.input[0],
-                           mpc_cmd_.list.front().target.input[1],
-                           mpc_cmd_.list.front().target.input[2],
-                           mpc_cmd_.list.front().target.input[3]
-                           ).finished().replicate(1, kSamples+1);
-    }
-    else{ // set reference states/inputs depending on previous mpc results
+    if (mpc_data_state_ == PREVIOUS_DATA_READY && mpc_data_reuse_flag_){ // set reference states/inputs depending on previous mpc results
       // method 1:
       reference_states_ = end_state.replicate(1, kSamples+1);
 
@@ -264,6 +254,15 @@ bool MpcHydrusController<T>::setReference()
       reference_inputs_.block(0, 0, kInputSize, kSamples) = predicted_inputs_;
       for (int j = 0; j < kInputSize; ++j)
         reference_inputs_(j, kSamples) = predicted_inputs_(j, kSamples - 1);
+    }
+    else{
+      reference_states_ = end_state.replicate(1, kSamples+1);
+      reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
+                           mpc_cmd_.list.front().target.input[0],
+                           mpc_cmd_.list.front().target.input[1],
+                           mpc_cmd_.list.front().target.input[2],
+                           mpc_cmd_.list.front().target.input[3]
+                           ).finished().replicate(1, kSamples+1);
     }
     double period = (mpc_cmd_.list.front().end_stamp - mpc_cmd_.list.front().start_stamp).toSec(); // might be negative
     int end_state_id = std::round(period / dt);
@@ -284,11 +283,11 @@ bool MpcHydrusController<T>::setReference()
       Eigen::Matrix<T, kStateSize, 1> target_state;
       for (int j = 0; j < kStateSize; ++j)
         target_state(j) = mpc_cmd_.list[cmd_id].target.state[j];
-      reference_states_.col(i) = target_state;
-      if(reference_states_.col(i).segment(kOriW,4).dot(
+      if(target_state.segment(kOriW,4).dot(
         est_state_.segment(kOriW,4))<0.0)
-          reference_states_.block(kOriW,i,4,1) =
-            -reference_states_.block(kOriW,i,4,1);
+        target_state.block(kOriW,0,4,1) =
+          -target_state.block(kOriW,0,4,1);
+      reference_states_.col(i) = target_state;
       // quaternion_norm_ok &= fabs(est_state_.segment(kOriW, 4).norm()-1.0)<0.1;
     }
     if (mpc_data_state_ == PREVIOUS_DATA_READY && mpc_data_reuse_flag_){
@@ -298,10 +297,8 @@ bool MpcHydrusController<T>::setReference()
     }
     else{
       for(int i=0; i<kSamples+1; i++){
-        Eigen::Matrix<T, kInputSize, 1> target_input;
         for (int j = 0; j < kInputSize; ++j)
-          target_input(j) = mpc_cmd_.list[cmd_id].target.input[j];
-        reference_inputs_.col(i) = target_input;
+          reference_inputs_(j, i) = mpc_cmd_.list[cmd_id].target.input[j];
       }
     }
     // mpc_wrapper_.setCosts(kSamples, 0.0, 0.0);
