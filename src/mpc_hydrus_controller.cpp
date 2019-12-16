@@ -258,10 +258,10 @@ bool MpcHydrusController<T>::setReference()
     else{
       reference_states_ = end_state.replicate(1, kSamples+1);
       reference_inputs_ = (Eigen::Matrix<T, kInputSize, 1>() <<
-                           mpc_cmd_.list.front().target.input[0],
-                           mpc_cmd_.list.front().target.input[1],
                            mpc_cmd_.list.front().target.input[2],
-                           mpc_cmd_.list.front().target.input[3]
+                           mpc_cmd_.list.front().target.input[5],
+                           mpc_cmd_.list.front().target.input[8],
+                           mpc_cmd_.list.front().target.input[11]
                            ).finished().replicate(1, kSamples+1);
     }
   }
@@ -294,7 +294,7 @@ bool MpcHydrusController<T>::setReference()
     else{
       for(int i=0; i<kSamples+1; i++){
         for (int j = 0; j < kInputSize; ++j)
-          reference_inputs_(j, i) = mpc_cmd_.list[cmd_id].target.input[j];
+          reference_inputs_(j, i) = mpc_cmd_.list[cmd_id].target.input[3 * j + 2];
       }
     }
   }
