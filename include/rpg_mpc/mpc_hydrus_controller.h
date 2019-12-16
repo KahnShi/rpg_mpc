@@ -33,6 +33,7 @@
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Empty.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <aerial_robot_msgs/MpcCommandList.h>
@@ -95,6 +96,7 @@ class MpcHydrusController {
   void cogOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);
   void baselinkOdomCallback(const nav_msgs::Odometry::ConstPtr& msg);
   void mpcCostGainCallback(const aerial_robot_msgs::MpcCostGain::ConstPtr& msg);
+  void mpcReuseFlagCallback(const std_msgs::Empty msg);
   bool setStateEstimate();
   bool setReference();
   void updateMpc();
@@ -125,6 +127,7 @@ class MpcHydrusController {
   ros::Subscriber sub_cog_odom_;
   ros::Subscriber sub_baselink_odom_;
   ros::Subscriber sub_mpc_cost_gain_;
+  ros::Subscriber sub_mpc_reuse_flag_;
   ros::Publisher pub_predicted_trajectory_;
   ros::Publisher pub_reference_point_markers_;
   ros::Publisher pub_predicted_states_;

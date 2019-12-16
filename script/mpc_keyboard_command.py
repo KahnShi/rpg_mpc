@@ -21,6 +21,7 @@ Reading from the keyboard  and Publishing to Twist!
 0:             preset waypoint 0, keep still
 1:             preset waypoint 1, relative dist: (1.0, 1.0, 0.5)
 2:             preset waypoint 2, relative dist: (1.0, -1.0, 0.5)
+5:             switch to use mpc previous optimal results (DANGEROUS)
 o:             circle motion
 l:             circle speed increase
 k:             circle speed decrease
@@ -44,6 +45,7 @@ class mpcTaskKeyboardInterface:
         self.__mpc_target_nav_pub = rospy.Publisher('/uav/nav', FlightNav, queue_size=1)
         self.__mpc_stop_flag_pub = rospy.Publisher('/mpc/stop_cmd', Bool, queue_size=1)
         self.__mpc_target_traj_pub = rospy.Publisher("/mpc/circle_traj", Path, queue_size=1);
+        self.__mpc_reuse_flag_pub = rospy.Publisher("/mpc/reuse_flag", Empty, queue_size=1);
 
         #sub
         self.__hydrus_odom = Odometry()
@@ -201,6 +203,11 @@ class mpcTaskKeyboardInterface:
             self.__sendMpcTargetOdomFromOffset([0.5, 0.5, 0.3], self.__mpc_horizon)
 	if key == '2':
             self.__sendMpcTargetOdomFromOffset([0.5, -0.5, 0.3], self.__mpc_horizon)
+        if key == '5':
+            msg = Empty()
+            ## self.__mpc_reuse_flag_pub.publish(msg)
+            print "Switch to mpc reuse data"
+            print "[temp] too dangerous, so is disabled currently"
 	if key == 'o':
             self.__circle_start_time = rospy.Time.now()
             self.__circle_start_ang = 0.0

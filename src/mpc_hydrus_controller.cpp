@@ -61,6 +61,8 @@ MpcHydrusController<T>::MpcHydrusController(
                                    &MpcHydrusController<T>::baselinkOdomCallback, this);
   sub_mpc_cost_gain_ = nh_.subscribe("/mpc/cost_gain", 1,
                                    &MpcHydrusController<T>::mpcCostGainCallback, this);
+  sub_mpc_reuse_flag_ = nh_.subscribe("/mpc/reuse_flag", 1,
+                                   &MpcHydrusController<T>::mpcReuseFlagCallback, this);
 
   if(!params_.loadParameters(pnh_)) // todo
   {
@@ -91,6 +93,16 @@ void MpcHydrusController<T>::cogOdomCallback(const nav_msgs::Odometry::ConstPtr&
 template <typename T>
 void MpcHydrusController<T>::baselinkOdomCallback(const nav_msgs::Odometry::ConstPtr& msg){
   baselink_odom_ = *msg;
+}
+
+template <typename T>
+void MpcHydrusController<T>::mpcReuseFlagCallback(const std_msgs::Empty msg){
+  if (mpc_data_reuse_flag_){
+    mpc_data_reuse_flag_ = false;
+    ROS_INFO("mpc data reuse close.");}
+  else{
+    mpc_data_reuse_flag_ = true;
+    ROS_INFO("mpc data reuse open.");}
 }
 
 template <typename T>
