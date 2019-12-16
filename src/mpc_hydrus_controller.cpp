@@ -264,10 +264,6 @@ bool MpcHydrusController<T>::setReference()
                            mpc_cmd_.list.front().target.input[3]
                            ).finished().replicate(1, kSamples+1);
     }
-    double period = (mpc_cmd_.list.front().end_stamp - mpc_cmd_.list.front().start_stamp).toSec(); // might be negative
-    int end_state_id = std::round(period / dt);
-    // mpc_wrapper_.setCosts(end_state_id, 0.0, 0.0);
-    mpc_wrapper_.setCosts(end_state_id, 1.0, 1.0);
   }
   else // todo
   {
@@ -301,8 +297,6 @@ bool MpcHydrusController<T>::setReference()
           reference_inputs_(j, i) = mpc_cmd_.list[cmd_id].target.input[j];
       }
     }
-    // mpc_wrapper_.setCosts(kSamples, 0.0, 0.0);
-    mpc_wrapper_.setCosts(kSamples, 1.0, 1.0);
   }
   // return quaternion_norm_ok;
 }
@@ -442,7 +436,8 @@ void MpcHydrusController<T>::normalizeStateQuaternion(Eigen::Ref<Eigen::Matrix<T
 template <typename T>
 bool MpcHydrusController<T>::setNewParams(MpcParams<T>& params)
 {
-  mpc_wrapper_.setCosts(params.Q_, params.R_);
+  // mpc_wrapper_.setCosts(params.Q_, params.R_);
+  mpc_wrapper_.setCosts(params.Q_, params.R_, 1.0, 1.0);
   mpc_wrapper_.setLimits(
     params.min_thrust_, params.max_thrust_);
   // mpc_wrapper_.setCameraParameters(params.p_B_C_, params.q_B_C_);

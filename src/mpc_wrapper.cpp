@@ -151,57 +151,6 @@ bool MpcWrapper<T>::setCosts(
   return true;
 }
 
-// Set cost matrices with optional scaling.
-template <typename T>
-bool MpcWrapper<T>::setCosts(
-  const int end_state_id,
-  const T state_cost_scaling, const T input_cost_scaling)
-{
-  if(state_cost_scaling < 0.0 || input_cost_scaling < 0.0 )
-  {
-    ROS_ERROR("MPC: Cost scaling is wrong, must be non-negative!");
-    return false;
-  }
-
-  float state_scale{1.0};
-  float input_scale{1.0};
-  float state_N_scale{1.0};
-  // float state_N_scale{100.0};
-  for(int i=0; i<kSamples; i++)
-  {
-    /* method 1: more weights on start states */
-    state_scale = exp(- float(i)/float(kSamples)
-      * float(state_cost_scaling));
-    input_scale = exp(- float(i)/float(kSamples)
-      * float(input_cost_scaling));
-    /* method 2: more weights on end states */
-    // if (i < end_state_id){
-    //   state_scale = exp(float(i)/float(end_state_id)
-    //                     * float(state_cost_scaling));
-    //   input_scale = exp(float(i)/float(end_state_id)
-    //                     * float(input_cost_scaling));
-    // }
-    // else if (i == end_state_id){
-    //   // state_scale = 100.0; // large gain when in end time
-    //   state_scale = 1.0; // large gain when in end time
-    //   input_scale = 1.0;
-    // }
-    // else{
-    //   state_scale = 1.0;
-    //   input_scale = 1.0;
-    // }
-    acado_W_.block(0, i*kRefSize, kCostSize, kCostSize) =
-      W_.block(0, 0, kCostSize, kCostSize).template cast<float>()
-      * state_scale;
-    acado_W_.block(kCostSize, i*kRefSize+kCostSize, kInputSize, kInputSize) =
-      W_.block(kCostSize, kCostSize, kInputSize, kInputSize
-        ).template cast<float>() * input_scale;
-  }
-  acado_W_end_ = WN_.template cast<float>() * state_scale * state_N_scale;
-
-  return true;
-}
-
 // Set the input limits.
 template <typename T>
 bool MpcWrapper<T>::setLimits(T min_thrust, T max_thrust)
