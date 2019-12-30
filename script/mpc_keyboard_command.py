@@ -239,6 +239,9 @@ class mpcTaskKeyboardInterface:
             msg = Bool()
             msg.data = True
             self.__mpc_stop_flag_pub.publish(msg)
+            if self.__circle_motion_flag:
+                self.__circle_motion_flag = False
+                self.__ang_vel = 0.0
 	if key == 'c':
             print "Mpc control continues"
             msg = Bool()
