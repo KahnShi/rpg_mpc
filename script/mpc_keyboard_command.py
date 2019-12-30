@@ -28,6 +28,7 @@ k:             circle speed decrease
 p:             circle motion stops
 s:             mpc control stops
 c:             mpc control continues
+m:             circle motion mode switch between mpc and lqi
 q:             quit
 
 please don't have caps lock on.
@@ -247,6 +248,13 @@ class mpcTaskKeyboardInterface:
             msg = Bool()
             msg.data = False
             self.__mpc_stop_flag_pub.publish(msg)
+	if key == 'm':
+            if self.__circle_mpc_mode:
+                self.__circle_mpc_mode = False
+                print "Circle motion changes to LQI mode"
+            else:
+                self.__circle_mpc_mode = True
+                print "Circle motion changes to MPC mode"
 	if key == 'q':
             print "force quit by visit unexisted function"
 	    error()
