@@ -99,10 +99,10 @@ template <typename T>
 void MpcHydrusController<T>::mpcReuseFlagCallback(const std_msgs::Empty msg){
   if (mpc_data_reuse_flag_){
     mpc_data_reuse_flag_ = false;
-    ROS_INFO("mpc data reuse close.");}
+    ROS_WARN("mpc data reuse close.");}
   else{
     mpc_data_reuse_flag_ = true;
-    ROS_INFO("mpc data reuse open.");}
+    ROS_WARN("mpc data reuse open.");}
 }
 
 template <typename T>
