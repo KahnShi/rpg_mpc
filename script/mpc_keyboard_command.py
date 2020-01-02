@@ -52,6 +52,7 @@ class mpcTaskKeyboardInterface:
         self.__hydrus_odom = Odometry()
         self.__hydrus_cog_odom_sub = rospy.Subscriber('/uav/cog/odom', Odometry, self.__cogOdomCallback)
         self.__mpc_horizon = 1.0
+        self.__mpc_reuse_data = False
 
         self.__circle_motion_flag = False
         self.__circle_mpc_mode = True ## otherwise: flight_nav pos_vel cmd mode
@@ -205,10 +206,13 @@ class mpcTaskKeyboardInterface:
 	if key == '2':
             self.__sendMpcTargetOdomFromOffset([0.5, -0.5, 0.3], self.__mpc_horizon)
         if key == '5':
-            msg = Empty()
-            ## self.__mpc_reuse_flag_pub.publish(msg)
-            print "Switch to mpc reuse data"
-            print "[temp] too dangerous, so is disabled currently"
+            self.__mpc_reuse_flag_pub.publish(Empty())
+            if not self.__mpc_reuse_data:
+                print "Switch to mpc reuse data"
+                self.__mpc_reuse_data = True
+            else:
+                print "Close mpc reuse data"
+                self.__mpc_reuse_data = False
 	if key == 'o':
             self.__circle_start_time = rospy.Time.now()
             self.__circle_start_ang = 0.0
@@ -243,6 +247,10 @@ class mpcTaskKeyboardInterface:
             if self.__circle_motion_flag:
                 self.__circle_motion_flag = False
                 self.__ang_vel = 0.0
+            if self.__mpc_reuse_data:
+                print "Close mpc reuse data"
+                self.__mpc_reuse_data = False
+                self.__mpc_reuse_flag_pub.publish(Empty())
 	if key == 'c':
             print "Mpc control continues"
             msg = Bool()
